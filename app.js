@@ -1,5 +1,15 @@
-/* ===== TV Channel Data (live-tested, CORS-verified) ===== */
+/* ===== TV Channel Data ===== */
 const TV_CHANNELS = [
+  /* Mainstream — YouTube live embeds */
+  { id:"yt1", name:"Sun TV",         logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_SUN_TV/images/LOGO_HD/image.png",         type:"youtube", ytId:"UCBnxEdpoZwstJqC1yZpOjRA" },
+  { id:"yt2", name:"Vijay TV",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_STAR_VIJAY/images/LOGO_HD/image.png",     type:"youtube", ytId:"UCvrhwpnp2DHYQ1CbXby9ypQ" },
+  { id:"yt3", name:"Zee Tamil",      logo:"https://dtil.tmsimg.com/assets/GNLZZGG0022S29Y.png?lock=720x540",                                                                     type:"youtube", ytId:"UC_wIGmvdyAQLtl-U2nHV9rg" },
+  { id:"yt4", name:"Colors Tamil",   logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_TAMIL/images/LOGO_HD/image.png",   type:"youtube", ytId:"UCWW46MxidmSoM5WvgGo21lA" },
+  { id:"yt5", name:"Kalaignar TV",   logo:"https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/Kalaignar%20TV.png",               type:"youtube", ytId:"UC0SIHdEcfg4BsM8X5tixwHQ" },
+  { id:"yt6", name:"Raj TV",         logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_RAJ_TV/images/LOGO_HD/image.png",         type:"youtube", ytId:"UCo6XUuu19Kh1WCorvh-3vQA" },
+  { id:"yt7", name:"Sun News",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_SUN_NEWS/images/LOGO_HD/image.png",       type:"youtube", ytId:"UCYlh4lH762HvHt6mmiecyWQ" },
+  { id:"yt8", name:"Raj News Tamil", logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_RAJ_NEWS_TAMIL/images/LOGO_HD/image.png", type:"youtube", ytId:"UC1mkFVHzP87YQ87PSMxo9MQ" },
+  /* Other channels — direct HLS (live-tested, CORS-verified) */
   { id:"tv1",  name:"Makkal TV",           logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_MAKKAL_TV/images/LOGO_HD/image.png",         url:"https://5k8q87azdy4v-hls-live.wmncdn.net/MAKKAL/271ddf829afeece44d8732757fba1a66.sdp/playlist.m3u8" },
   { id:"tv2",  name:"News18 Tamil Nadu",   logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_NEWS18_TAMIL_NADU/images/LOGO_HD/image.png", url:"https://n18syndication.akamaized.net/bpk-tv/News18_Tamil_Nadu_NW18_MOB/output01/master.m3u8" },
   { id:"tv3",  name:"Polimer TV",          logo:"https://dtil.tmsimg.com/assets/s143665_ld_h15_aa.png?lock=720x540",                                                                      url:"https://cdn-2.pishow.tv/live/1241/master.m3u8" },
@@ -161,15 +171,28 @@ function openTVPlayer(channel) {
   document.body.style.overflow = "hidden";
 
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
+  const oldFrame = document.getElementById("tvYtFrame");
+  if (oldFrame) oldFrame.remove();
 
-  if (Hls.isSupported()) {
-    tvHlsInstance = new Hls({ lowLatencyMode: true });
-    tvHlsInstance.loadSource(channel.url);
-    tvHlsInstance.attachMedia(tvVideo);
-    tvHlsInstance.on(Hls.Events.MANIFEST_PARSED, () => tvVideo.play().catch(() => {}));
-  } else if (tvVideo.canPlayType("application/vnd.apple.mpegurl")) {
-    tvVideo.src = channel.url;
-    tvVideo.play().catch(() => {});
+  if (channel.type === "youtube") {
+    tvVideo.style.display = "none";
+    const fr = document.createElement("iframe");
+    fr.id = "tvYtFrame";
+    fr.src = `https://www.youtube.com/embed/live_stream?channel=${channel.ytId}&autoplay=1`;
+    fr.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    fr.allowFullscreen = true;
+    tvVideo.parentNode.insertBefore(fr, tvVideo.nextSibling);
+  } else {
+    tvVideo.style.display = "";
+    if (Hls.isSupported()) {
+      tvHlsInstance = new Hls({ lowLatencyMode: true });
+      tvHlsInstance.loadSource(channel.url);
+      tvHlsInstance.attachMedia(tvVideo);
+      tvHlsInstance.on(Hls.Events.MANIFEST_PARSED, () => tvVideo.play().catch(() => {}));
+    } else if (tvVideo.canPlayType("application/vnd.apple.mpegurl")) {
+      tvVideo.src = channel.url;
+      tvVideo.play().catch(() => {});
+    }
   }
 }
 
@@ -178,7 +201,10 @@ function closeTVPlayer() {
   document.body.style.overflow = "";
   tvVideo.pause();
   tvVideo.src = "";
+  tvVideo.style.display = "";
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
+  const fr = document.getElementById("tvYtFrame");
+  if (fr) fr.remove();
   currentTV = null;
 }
 

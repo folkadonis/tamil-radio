@@ -166,7 +166,8 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .tv-modal-close:hover{background:rgba(255,255,255,.2)}
 .tv-modal-close svg{width:16px;height:16px}
 #tvVideo{width:100%;aspect-ratio:16/9;display:block;background:#000}
-@media(max-width:640px){.tv-grid{grid-template-columns:1fr}.tv-modal-inner{margin:0;border-radius:0;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.tv-modal{align-items:stretch}#tvVideo{flex:1;aspect-ratio:unset}}
+#tvYtFrame{width:100%;aspect-ratio:16/9;display:block;background:#000;border:none}
+@media(max-width:640px){.tv-grid{grid-template-columns:1fr}.tv-modal-inner{margin:0;border-radius:0;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.tv-modal{align-items:stretch}#tvVideo,#tvYtFrame{flex:1;aspect-ratio:unset}}
 
 /* ===== Community Button ===== */
 .community-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:none;border-radius:999px;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);color:var(--text);font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap}
