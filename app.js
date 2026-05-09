@@ -281,5 +281,74 @@ playerFreq.addEventListener("click", () => {
   }
 });
 
+/* ===== Community Voice (Jitsi) ===== */
+const communityBtn   = document.getElementById("communityBtn");
+const communityModal = document.getElementById("communityModal");
+const communityClose = document.getElementById("communityClose");
+const jitsiContainer = document.getElementById("jitsiContainer");
+
+let jitsiApi = null;
+
+function openCommunity() {
+  communityModal.classList.add("open");
+  communityModal.setAttribute("aria-hidden", "false");
+  communityBtn.classList.add("active");
+
+  if (jitsiApi) return; // already loaded
+
+  function initJitsi() {
+    jitsiApi = new window.JitsiMeetExternalAPI("meet.jit.si", {
+      roomName: "TamilRadioCommunity2024",
+      parentNode: jitsiContainer,
+      width: "100%",
+      height: "100%",
+      configOverwrite: {
+        startWithVideoMuted: true,
+        startWithAudioMuted: false,
+        prejoinPageEnabled: false,
+        disableVideo: true,
+        toolbarButtons: ["microphone", "hangup", "participants-pane", "tileview"],
+        disableThirdPartyRequests: true,
+      },
+      interfaceConfigOverwrite: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        SHOW_BRAND_WATERMARK: false,
+        TOOLBAR_ALWAYS_VISIBLE: true,
+        HIDE_INVITE_MORE_HEADER: true,
+      },
+      userInfo: { displayName: "Tamil Radio Listener" },
+    });
+
+    jitsiApi.on("videoConferenceLeft", closeCommunity);
+  }
+
+  if (window.JitsiMeetExternalAPI) {
+    initJitsi();
+  } else {
+    const script = document.createElement("script");
+    script.src = "https://meet.jit.si/external_api.js";
+    script.onload = initJitsi;
+    document.head.appendChild(script);
+  }
+}
+
+function closeCommunity() {
+  communityModal.classList.remove("open");
+  communityModal.setAttribute("aria-hidden", "true");
+  communityBtn.classList.remove("active");
+  if (jitsiApi) { jitsiApi.dispose(); jitsiApi = null; }
+  jitsiContainer.innerHTML = "";
+}
+
+communityBtn.addEventListener("click", openCommunity);
+communityClose.addEventListener("click", closeCommunity);
+communityModal.addEventListener("click", e => {
+  if (e.target === communityModal) closeCommunity();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && communityModal.classList.contains("open")) closeCommunity();
+});
+
 /* ===== Init ===== */
 renderStations();
