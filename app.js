@@ -141,14 +141,17 @@ function renderTV() {
   const list  = TV_CHANNELS.filter(c => !query || c.name.toLowerCase().includes(query));
 
   tvGrid.innerHTML = list.map(c => `
-    <div class="tv-card" data-tvid="${c.id}">
+    <div class="tv-card${c.type === 'youtube' ? ' tv-card-yt' : ''}" data-tvid="${c.id}">
       <div class="tv-logo-wrap">
         <img class="tv-logo" src="${c.logo}" alt="${c.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="tv-logo-fallback" style="display:none">${getInitials(c.name)}</div>
       </div>
       <div class="tv-info">
         <p class="tv-name">${c.name}</p>
-        <div class="station-live"><span class="live-dot"></span> LIVE</div>
+        ${c.type === 'youtube'
+          ? '<div class="yt-badge"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1C4.5 20.5 12 20.5 12 20.5s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.75 15.5V8.5l6.25 3.5-6.25 3.5z"/></svg> YouTube Live</div>'
+          : '<div class="station-live"><span class="live-dot"></span> LIVE</div>'
+        }
       </div>
       <div class="tv-play-icon">
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
@@ -158,7 +161,12 @@ function renderTV() {
   tvGrid.querySelectorAll(".tv-card").forEach(card => {
     card.addEventListener("click", () => {
       const ch = TV_CHANNELS.find(c => c.id === card.dataset.tvid);
-      if (ch) openTVPlayer(ch);
+      if (!ch) return;
+      if (ch.type === "youtube") {
+        window.open(`https://www.youtube.com/channel/${ch.ytId}/live`, "_blank", "noopener");
+      } else {
+        openTVPlayer(ch);
+      }
     });
   });
 }
@@ -174,25 +182,14 @@ function openTVPlayer(channel) {
   const oldFrame = document.getElementById("tvYtFrame");
   if (oldFrame) oldFrame.remove();
 
-  if (channel.type === "youtube") {
-    tvVideo.style.display = "none";
-    const fr = document.createElement("iframe");
-    fr.id = "tvYtFrame";
-    fr.src = `https://www.youtube.com/embed/live_stream?channel=${channel.ytId}&autoplay=1`;
-    fr.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
-    fr.allowFullscreen = true;
-    tvVideo.parentNode.insertBefore(fr, tvVideo.nextSibling);
-  } else {
-    tvVideo.style.display = "";
-    if (Hls.isSupported()) {
-      tvHlsInstance = new Hls({ lowLatencyMode: true });
-      tvHlsInstance.loadSource(channel.url);
-      tvHlsInstance.attachMedia(tvVideo);
-      tvHlsInstance.on(Hls.Events.MANIFEST_PARSED, () => tvVideo.play().catch(() => {}));
-    } else if (tvVideo.canPlayType("application/vnd.apple.mpegurl")) {
-      tvVideo.src = channel.url;
-      tvVideo.play().catch(() => {});
-    }
+  if (Hls.isSupported()) {
+    tvHlsInstance = new Hls({ lowLatencyMode: true });
+    tvHlsInstance.loadSource(channel.url);
+    tvHlsInstance.attachMedia(tvVideo);
+    tvHlsInstance.on(Hls.Events.MANIFEST_PARSED, () => tvVideo.play().catch(() => {}));
+  } else if (tvVideo.canPlayType("application/vnd.apple.mpegurl")) {
+    tvVideo.src = channel.url;
+    tvVideo.play().catch(() => {});
   }
 }
 
@@ -201,10 +198,7 @@ function closeTVPlayer() {
   document.body.style.overflow = "";
   tvVideo.pause();
   tvVideo.src = "";
-  tvVideo.style.display = "";
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
-  const fr = document.getElementById("tvYtFrame");
-  if (fr) fr.remove();
   currentTV = null;
 }
 
