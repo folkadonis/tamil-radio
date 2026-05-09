@@ -134,8 +134,13 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
 [data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12)}
 
-/* ===== Community Button ===== */
+/* ===== Listener Badge ===== */
 .header-actions{display:flex;align-items:center;gap:10px}
+.listener-wrap{position:relative;display:flex;align-items:center}
+.listener-badge{position:absolute;top:-8px;right:-8px;display:inline-flex;align-items:center;gap:4px;background:#22c55e;color:#fff;font-family:var(--font);font-size:.65rem;font-weight:700;padding:2px 7px 2px 5px;border-radius:999px;white-space:nowrap;z-index:1;box-shadow:0 2px 8px rgba(34,197,94,.4)}
+.listener-dot{width:5px;height:5px;background:#fff;border-radius:50%;animation:livePulse 1.5s ease-in-out infinite;flex-shrink:0}
+
+/* ===== Community Button ===== */
 .community-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:none;border-radius:999px;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);color:var(--text);font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap}
 [data-theme="light"] .community-btn{border-color:rgba(0,0,0,.1)}
 .community-btn:hover{background:var(--bg-card-hover)}

@@ -324,5 +324,71 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && communityModal.classList.contains("open")) closeCommunity();
 });
 
+/* ===== Live Listener Count (MQTT presence) ===== */
+const listenerBadge = document.getElementById("listenerBadge");
+const listenerCount = document.getElementById("listenerCount");
+
+const SESSION_ID    = Math.random().toString(36).slice(2, 11);
+const MQTT_TOPIC    = "tamil-radio-app-v1/listeners/";
+const STALE_MS      = 90000; // 90s without heartbeat = gone
+const HEARTBEAT_MS  = 30000;
+
+const activeListeners = new Map(); // sessionId -> lastSeen timestamp
+let mqttClient = null;
+
+function updateBadge() {
+  const now = Date.now();
+  for (const [id, ts] of activeListeners) {
+    if (now - ts > STALE_MS) activeListeners.delete(id);
+  }
+  const n = activeListeners.size;
+  listenerCount.textContent = n;
+  listenerBadge.style.display = n > 0 ? "inline-flex" : "none";
+}
+
+function publishPresence(alive = true) {
+  if (!mqttClient || !mqttClient.connected) return;
+  mqttClient.publish(
+    MQTT_TOPIC + SESSION_ID,
+    JSON.stringify({ alive }),
+    { qos: 0, retain: false }
+  );
+}
+
+function initPresence() {
+  mqttClient = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", {
+    clientId: "tamilradio_" + SESSION_ID,
+    clean: true,
+    reconnectPeriod: 8000,
+    connectTimeout: 10000,
+  });
+
+  mqttClient.on("connect", () => {
+    mqttClient.subscribe(MQTT_TOPIC + "+");
+    publishPresence(true);
+  });
+
+  mqttClient.on("message", (topic, msg) => {
+    try {
+      const sid  = topic.split("/").pop();
+      const data = JSON.parse(msg.toString());
+      if (data.alive) activeListeners.set(sid, Date.now());
+      else            activeListeners.delete(sid);
+      updateBadge();
+    } catch (_) {}
+  });
+
+  // Heartbeat
+  setInterval(() => publishPresence(true), HEARTBEAT_MS);
+
+  // Stale cleanup
+  setInterval(updateBadge, 15000);
+
+  // Leave gracefully
+  window.addEventListener("beforeunload", () => publishPresence(false));
+}
+
+initPresence();
+
 /* ===== Init ===== */
 renderStations();
