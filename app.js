@@ -1,14 +1,8 @@
 /* ===== TV Channel Data ===== */
 const TV_CHANNELS = [
-  /* Mainstream — YouTube live embeds */
-  { id:"yt1", name:"Sun TV",         logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_SUN_TV/images/LOGO_HD/image.png",         type:"youtube", ytId:"UCBnxEdpoZwstJqC1yZpOjRA" },
-  { id:"yt2", name:"Vijay TV",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_STAR_VIJAY/images/LOGO_HD/image.png",     type:"youtube", ytId:"UCvrhwpnp2DHYQ1CbXby9ypQ" },
-  { id:"yt3", name:"Zee Tamil",      logo:"https://dtil.tmsimg.com/assets/GNLZZGG0022S29Y.png?lock=720x540",                                                                     type:"youtube", ytId:"UC_wIGmvdyAQLtl-U2nHV9rg" },
-  { id:"yt4", name:"Colors Tamil",   logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_COLORS_TAMIL/images/LOGO_HD/image.png",   type:"youtube", ytId:"UCWW46MxidmSoM5WvgGo21lA" },
-  { id:"yt5", name:"Kalaignar TV",   logo:"https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/Kalaignar%20TV.png",               type:"youtube", ytId:"UC0SIHdEcfg4BsM8X5tixwHQ" },
-  { id:"yt6", name:"Raj TV",         logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_RAJ_TV/images/LOGO_HD/image.png",         type:"youtube", ytId:"UCo6XUuu19Kh1WCorvh-3vQA" },
-  { id:"yt7", name:"Sun News",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_SUN_NEWS/images/LOGO_HD/image.png",       type:"youtube", ytId:"UCYlh4lH762HvHt6mmiecyWQ" },
-  { id:"yt8", name:"Raj News Tamil", logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_RAJ_NEWS_TAMIL/images/LOGO_HD/image.png", type:"youtube", ytId:"UC1mkFVHzP87YQ87PSMxo9MQ" },
+  /* Mainstream — confirmed live HLS streams */
+  { id:"ms1", name:"Raj TV",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_RAJ_TV/images/LOGO_HD/image.png",                    url:"https://livestream.rajtv.tv/hlslive/Admin/px08241087/live/RajTV_Digital_plus/master_1.m3u8" },
+  { id:"ms2", name:"Kalaignar TV", logo:"https://ltsk-cdn.s3.eu-west-1.amazonaws.com/jumpstart/Temp_Live/cdn/HLS/Channel/transparentImages/Kalaignar%20TV.png",                        url:"https://segment.yuppcdn.net/240122/kalaignartv/playlist.m3u8" },
   /* Other channels — direct HLS (live-tested, CORS-verified) */
   { id:"tv1",  name:"Makkal TV",           logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_MAKKAL_TV/images/LOGO_HD/image.png",         url:"https://5k8q87azdy4v-hls-live.wmncdn.net/MAKKAL/271ddf829afeece44d8732757fba1a66.sdp/playlist.m3u8" },
   { id:"tv2",  name:"News18 Tamil Nadu",   logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_NEWS18_TAMIL_NADU/images/LOGO_HD/image.png", url:"https://n18syndication.akamaized.net/bpk-tv/News18_Tamil_Nadu_NW18_MOB/output01/master.m3u8" },
@@ -141,17 +135,14 @@ function renderTV() {
   const list  = TV_CHANNELS.filter(c => !query || c.name.toLowerCase().includes(query));
 
   tvGrid.innerHTML = list.map(c => `
-    <div class="tv-card${c.type === 'youtube' ? ' tv-card-yt' : ''}" data-tvid="${c.id}">
+    <div class="tv-card" data-tvid="${c.id}">
       <div class="tv-logo-wrap">
         <img class="tv-logo" src="${c.logo}" alt="${c.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="tv-logo-fallback" style="display:none">${getInitials(c.name)}</div>
       </div>
       <div class="tv-info">
         <p class="tv-name">${c.name}</p>
-        ${c.type === 'youtube'
-          ? '<div class="yt-badge"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1C4.5 20.5 12 20.5 12 20.5s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.75 15.5V8.5l6.25 3.5-6.25 3.5z"/></svg> YouTube Live</div>'
-          : '<div class="station-live"><span class="live-dot"></span> LIVE</div>'
-        }
+        <div class="station-live"><span class="live-dot"></span> LIVE</div>
       </div>
       <div class="tv-play-icon">
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
@@ -161,12 +152,7 @@ function renderTV() {
   tvGrid.querySelectorAll(".tv-card").forEach(card => {
     card.addEventListener("click", () => {
       const ch = TV_CHANNELS.find(c => c.id === card.dataset.tvid);
-      if (!ch) return;
-      if (ch.type === "youtube") {
-        window.open(`https://www.youtube.com/channel/${ch.ytId}/live`, "_blank", "noopener");
-      } else {
-        openTVPlayer(ch);
-      }
+      if (ch) openTVPlayer(ch);
     });
   });
 }
