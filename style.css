@@ -140,6 +140,40 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .listener-badge{position:absolute;top:-8px;right:-8px;display:inline-flex;align-items:center;gap:4px;background:#22c55e;color:#fff;font-family:var(--font);font-size:.65rem;font-weight:700;padding:2px 7px 2px 5px;border-radius:999px;white-space:nowrap;z-index:1;box-shadow:0 2px 8px rgba(34,197,94,.4)}
 .listener-dot{width:5px;height:5px;background:#fff;border-radius:50%;animation:livePulse 1.5s ease-in-out infinite;flex-shrink:0}
 
+/* ===== TV Grid ===== */
+.tv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.tv-card{background:var(--bg-card);border:1px solid rgba(255,255,255,.05);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s;opacity:0;transform:translateY(16px);animation:cardIn .4s ease forwards}
+[data-theme="light"] .tv-card{border-color:rgba(0,0,0,.06)}
+.tv-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.tv-thumb{position:relative;width:100%;aspect-ratio:16/9;background:#111;overflow:hidden}
+.tv-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.tv-card:hover .tv-thumb img{transform:scale(1.06)}
+.tv-thumb-fallback{width:100%;height:100%;display:grid;place-items:center;font-size:1.6rem;font-weight:800;background:var(--gradient);color:#fff}
+.tv-overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);display:grid;place-items:center;color:#fff;opacity:0;transition:opacity .25s}
+.tv-card:hover .tv-overlay{opacity:1}
+.tv-info{padding:10px 12px}
+.tv-name{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+
+/* ===== TV Video Modal ===== */
+.tv-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.tv-modal.open{opacity:1;pointer-events:all}
+.tv-modal-inner{width:100%;max-width:900px;background:var(--bg);border-radius:var(--radius);overflow:hidden;transform:scale(.95);transition:transform .3s cubic-bezier(.32,1,.24,1);margin:16px}
+.tv-modal.open .tv-modal-inner{transform:scale(1)}
+.tv-modal-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+[data-theme="light"] .tv-modal-bar{border-bottom-color:rgba(0,0,0,.08)}
+.tv-modal-info{display:flex;align-items:center;gap:10px}
+.tv-modal-logo{width:36px;height:36px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.05)}
+.tv-modal-name{font-size:.95rem;font-weight:700;margin-bottom:2px}
+.tv-live-chip{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#22c55e;text-transform:uppercase;letter-spacing:1px}
+.tv-live-chip .live-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;animation:livePulse 1.5s ease-in-out infinite}
+.tv-video-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000}
+.tv-video-wrap video{width:100%;height:100%;display:block}
+.tv-spinner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.tv-spinner::after{content:'';width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.tv-error{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-dim)}
+.tv-error p{font-size:.9rem}
+@media(max-width:640px){.tv-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.tv-modal-inner{margin:0;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%}.tv-modal{align-items:flex-end}}
+
 /* ===== Community Button ===== */
 .community-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:none;border-radius:999px;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);color:var(--text);font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap}
 [data-theme="light"] .community-btn{border-color:rgba(0,0,0,.1)}
