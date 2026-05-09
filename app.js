@@ -1,11 +1,14 @@
 /* ===== Station Data ===== */
 const STATIONS = [
-  /* — Chennai / India — confirmed live on radios.crabdance.com:8002 — */
-  { id: 1, name: "Radio Mirchi 98.3",  freq: "98.3 MHz",   region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/1" },
-  { id: 2, name: "Suryan FM 93.5",     freq: "93.5 MHz",   region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/2" },
-  { id: 3, name: "Hello FM 106.4",     freq: "106.4 MHz",  region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/3" },
-  { id: 4, name: "Big FM 92.7",        freq: "92.7 MHz",   region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/4" },
-  { id: 5, name: "Radio City 91.1",    freq: "91.1 MHz",   region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/5" },
+  /* — Chennai FM — crabdance.com — */
+  { id: 1, name: "Radio Mirchi 98.3",   freq: "98.3 MHz",  region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/1" },
+  { id: 2, name: "Suryan FM 93.5",      freq: "93.5 MHz",  region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/2" },
+  { id: 3, name: "Hello FM 106.4",      freq: "106.4 MHz", region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/3" },
+  { id: 4, name: "Big FM 92.7",         freq: "92.7 MHz",  region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/4" },
+  { id: 5, name: "Radio City 91.1",     freq: "91.1 MHz",  region: "Chennai", cat: "india", url: "http://radios.crabdance.com:8002/5" },
+  /* — AIR Chennai — HLS — */
+  { id: 6, name: "AIR FM Gold Chennai", freq: "101.4 MHz", region: "Chennai", cat: "india", url: "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio005/hlspbaudio00564kbps.m3u8" },
+  { id: 7, name: "AIR Rainbow Chennai", freq: "101.9 MHz", region: "Chennai", cat: "india", url: "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio004/hlspbaudio00464kbps.m3u8" },
 ];
 
 /* ===== DOM Refs ===== */
@@ -31,6 +34,7 @@ let isLoading      = false;
 let filteredList   = [...STATIONS];
 const offlineIds   = new Set();
 let retryTimer     = null;
+let hlsInstance    = null;
 
 /* ===== Theme ===== */
 function initTheme() {
@@ -129,10 +133,30 @@ function selectStation(station) {
   playerStation.classList.remove("has-error");
   playerFreq.textContent = station.region + " · " + station.freq;
 
-  audio.src = station.url;
-  audio.load();
-  playStream();
+  loadStream(station.url);
   renderStations();
+}
+
+/* ===== Stream Loader (handles both plain HTTP and HLS .m3u8) ===== */
+function loadStream(url) {
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+
+  const isHLS = url.endsWith(".m3u8");
+
+  if (isHLS && Hls.isSupported()) {
+    hlsInstance = new Hls({ lowLatencyMode: true });
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(audio);
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => playStream());
+    hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) { setLoading(false); markCurrentOffline(); }
+    });
+  } else {
+    // Native HLS (Safari) or plain HTTP stream
+    audio.src = url;
+    audio.load();
+    playStream();
+  }
 }
 
 /* ===== Playback ===== */
@@ -168,7 +192,8 @@ function setError(val) {
 function togglePlay() {
   if (!currentStation) return;
   if (audio.paused) {
-    playStream();
+    if (hlsInstance) playStream();
+    else loadStream(currentStation.url);
   } else {
     audio.pause();
     setPlaying(false);
