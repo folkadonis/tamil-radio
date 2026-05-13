@@ -25,6 +25,7 @@ const TV_CHANNELS = [
   { id:"tv19", name:"DD Tamil",            logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_DD_TAMIL/images/LOGO_HD/image.png",           url:"https://d2lk5u59tns74c.cloudfront.net/out/v1/abf46b14847e45499f4a47f3a9afe93d/index.m3u8" },
   { id:"tv20", name:"Roja Movies",         logo:"https://jiotvimages.cdn.jio.com/dare_images/images/rojamovies.png",                                                                       url:"https://stream.rojatv.cloud/rojatv/rojatv/index.m3u8" },
   { id:"tv21", name:"Star Vijay",         logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Vijay_TV_logo.png/200px-Vijay_TV_logo.png",                                        url:"https://peaky.techcoder40.workers.dev/776.m3u8" },
+  { id:"tv22", name:"Vijay Super",        logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Vijay_Super_logo.png/200px-Vijay_Super_logo.png",                                   url:"https://tglmp01.akamaized.net/out/v1/c1071012b73f4f189b202e1529e8f802/manifest.mpd" },
 ];
 
 /* ===== Radio Station Data ===== */
@@ -159,6 +160,8 @@ function renderTV() {
 }
 
 /* ===== TV Player ===== */
+let tvDashInstance = null;
+
 function openTVPlayer(channel) {
   currentTV = channel;
   tvModalName.textContent = channel.name;
@@ -166,10 +169,14 @@ function openTVPlayer(channel) {
   document.body.style.overflow = "hidden";
 
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
-  const oldFrame = document.getElementById("tvYtFrame");
-  if (oldFrame) oldFrame.remove();
+  if (tvDashInstance) { tvDashInstance.destroy(); tvDashInstance = null; }
 
-  if (Hls.isSupported()) {
+  const isDash = channel.url.endsWith(".mpd");
+
+  if (isDash) {
+    tvDashInstance = dashjs.MediaPlayer().create();
+    tvDashInstance.initialize(tvVideo, channel.url, true);
+  } else if (Hls.isSupported()) {
     tvHlsInstance = new Hls({ lowLatencyMode: true });
     tvHlsInstance.loadSource(channel.url);
     tvHlsInstance.attachMedia(tvVideo);
@@ -186,6 +193,7 @@ function closeTVPlayer() {
   tvVideo.pause();
   tvVideo.src = "";
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
+  if (tvDashInstance) { tvDashInstance.destroy(); tvDashInstance = null; }
   currentTV = null;
 }
 
