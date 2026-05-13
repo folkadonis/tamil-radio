@@ -24,6 +24,7 @@ const TV_CHANNELS = [
   { id:"tv18", name:"Vaanavil TV",         logo:"https://jiotvimages.cdn.jio.com/dare_images/images/Vaanavil_TV.png",                                                                      url:"https://6n3yope4d9ok-hls-live.5centscdn.com/vaanavil/TV.stream/playlist.m3u8" },
   { id:"tv19", name:"DD Tamil",            logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_DD_TAMIL/images/LOGO_HD/image.png",           url:"https://d2lk5u59tns74c.cloudfront.net/out/v1/abf46b14847e45499f4a47f3a9afe93d/index.m3u8" },
   { id:"tv20", name:"Roja Movies",         logo:"https://jiotvimages.cdn.jio.com/dare_images/images/rojamovies.png",                                                                       url:"https://stream.rojatv.cloud/rojatv/rojatv/index.m3u8" },
+  { id:"tv21", name:"Cartoon Network",    logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/200px-Cartoon_Network_2010_logo.svg.png",           url:"http://23.237.104.106:8080/USA_CARTOON_NETWORK/index.m3u8" },
 ];
 
 /* ===== Radio Station Data ===== */
