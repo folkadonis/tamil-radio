@@ -71,6 +71,8 @@ const TV_CHANNELS = [
   { id:"tv65", name:"Ultimate TV",       logo:"https://jiotvimages.cdn.jio.com/dare_images/images/utvtamil.png",                                                                                  url:"https://stream.ottlive.co.in/utvtamil/index.m3u8" },
   { id:"tv66", name:"Vasanth TV",        logo:"https://dtil.tmsimg.com/assets/s144068_ld_h15_aa.png?lock=720x540",                                                                               url:"https://mumt04.tangotv.in/VASANTHTV/index.m3u8" },
   { id:"tv67", name:"Village TV",        logo:"https://jiotvimages.cdn.jio.com/dare_images/images/VillageTV.png",                                                                                 url:"https://villagetv.applelive.in/villagetv/villagetv/index.m3u8" },
+  { id:"tv68", name:"Willow Cricket",    logo:"https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Willow_TV_logo.svg/200px-Willow_TV_logo.svg.png",                                             url:"https://cdn1.ctgiptv.com/willow-cricket/tracks-v1/mono.ts.m3u8" },
+  { id:"tv69", name:"Sri Sankara TV",    logo:"https://i.imgur.com/2z0bDRD.png",                                                                                                                  url:"https://mumt05.tangotv.in/SRISANKARA/tracks-v2/mono.m3u8" },
 ];
 
 /* ===== Radio Station Data ===== */
