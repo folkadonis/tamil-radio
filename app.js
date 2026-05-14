@@ -1,3 +1,8 @@
+/* Set this to your Cloudflare Worker URL after deploying cors-proxy/worker.js
+   e.g. "https://tamil-radio-proxy.YOUR-NAME.workers.dev"
+   Leave empty to disable — HTTP channels won't load on HTTPS without it. */
+const CORS_PROXY = "";
+
 /* ===== TV Channel Data ===== */
 const TV_CHANNELS = [
   /* Mainstream — confirmed live HLS streams */
@@ -81,6 +86,15 @@ const TV_CHANNELS = [
   { id:"tv74", name:"Esport3",          logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Esport3.svg/960px-Esport3.svg.png",                                                       url:"https://directes-tv-int.3catdirectes.cat/live-content/esport3-hls/master.m3u8" },
   { id:"tv75", name:"TyC Sports",       logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/TyC_Sports_logo.svg/960px-TyC_Sports_logo.svg.png",                                      url:"https://amg26268-amg26268c14-freelivesports-emea-10267.playouts.now.amagi.tv/ts-us-e2-n2/playlist/amg26268-sportsstudio-tycsports-freelivesportsemea/playlist.m3u8" },
   { id:"tv76", name:"TVRI Sport",       logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/TVRI_Sport_2022.svg/960px-TVRI_Sport_2022.svg.png",                                      url:"https://ott-balancer.tvri.go.id/live/eds/SportHD/hls/SportHD.m3u8" },
+  /* English / International — HTTPS + CORS verified */
+  { id:"tv77", name:"Nat Geo HD",       logo:"https://dtil.tmsimg.com/assets/s143574_ld_h15_aa.png?lock=720x540",                                                                                url:"http://103.157.248.140:8000/play/a012/index.m3u8" },
+  { id:"tv78", name:"Nat Geo Wild HD",  logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_NAT_GEO_WILD/images/LOGO_HD/image.png",              url:"http://103.157.248.140:8000/play/a010/index.m3u8" },
+  { id:"tv79", name:"Star Movies HD",   logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_STAR_MOVIES/images/LOGO_HD/image.png",               url:"http://103.157.248.140:8000/play/a01t/index.m3u8" },
+  { id:"tv80", name:"Romedy Now",       logo:"https://xstreamcp-assets-msp.streamready.in/assets/LIVETV/LIVECHANNEL/LIVETV_LIVETVCHANNEL_ROMEDY_NOW/images/LOGO_HD/image.png",                url:"http://103.157.248.140:8000/play/a015/index.m3u8" },
+  { id:"tv81", name:"INWILD",           logo:"https://cdn.uc.assets.prezly.com/92770c71-9d6f-400f-8311-38e9cfec52c2/InWild_landscape-green.png",                                              url:"https://amg00861-terninternation-inwild-samsunguk-w5wic.amagi.tv/playlist/amg00861-terninternation-inwild-samsunguk/playlist.m3u8" },
+  { id:"tv82", name:"InWonder",         logo:"https://cdn.uc.assets.prezly.com/f12e798d-6da4-46e1-8ec5-e391d6762659/InWonder_portrait-purple.png",                                            url:"https://amg00861-terninternation-inwonder-samsungau-1k63k.amagi.tv/playlist/amg00861-terninternation-inwonder-samsungau/playlist.m3u8" },
+  { id:"tv83", name:"Animax Asia",      logo:"https://jiotvimages.cdn.jio.com/dare_images/images/Animax.png",                                                                                 url:"https://amg02159-kcglobal-amg02159c1-samsung-in-521.playouts.now.amagi.tv/playlist/amg02159-kcglobal-animax-samsungin/playlist.m3u8" },
+  { id:"tv84", name:"Zee South Flix",   logo:"https://d3bd0tgyk368z1.cloudfront.net/zeelg/LG%20logo%20artwork/400x200/zsouthflix.png",                                                        url:"https://amg00862-amg00862c9-amgplt0173.playout.now3.amagi.tv/playlist/amg00862-amg00862c9-amgplt0173/playlist.m3u8" },
 ];
 
 /* ===== Radio Station Data ===== */
@@ -217,6 +231,13 @@ function renderTV() {
 /* ===== TV Player ===== */
 let tvDashInstance = null;
 
+function resolveStreamUrl(url) {
+  if (url.startsWith("http://") && CORS_PROXY) {
+    return CORS_PROXY + "/?url=" + encodeURIComponent(url);
+  }
+  return url;
+}
+
 function openTVPlayer(channel) {
   currentTV = channel;
   tvModalName.textContent = channel.name;
@@ -226,18 +247,26 @@ function openTVPlayer(channel) {
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
   if (tvDashInstance) { tvDashInstance.destroy(); tvDashInstance = null; }
 
-  const isDash = channel.url.endsWith(".mpd");
+  const streamUrl = resolveStreamUrl(channel.url);
+
+  if (channel.url.startsWith("http://") && !CORS_PROXY) {
+    tvModalName.textContent = channel.name + " — needs proxy";
+    tvVideo.src = "";
+    return;
+  }
+
+  const isDash = streamUrl.endsWith(".mpd");
 
   if (isDash) {
     tvDashInstance = dashjs.MediaPlayer().create();
-    tvDashInstance.initialize(tvVideo, channel.url, true);
+    tvDashInstance.initialize(tvVideo, streamUrl, true);
   } else if (Hls.isSupported()) {
     tvHlsInstance = new Hls({ lowLatencyMode: true });
-    tvHlsInstance.loadSource(channel.url);
+    tvHlsInstance.loadSource(streamUrl);
     tvHlsInstance.attachMedia(tvVideo);
     tvHlsInstance.on(Hls.Events.MANIFEST_PARSED, () => tvVideo.play().catch(() => {}));
   } else if (tvVideo.canPlayType("application/vnd.apple.mpegurl")) {
-    tvVideo.src = channel.url;
+    tvVideo.src = streamUrl;
     tvVideo.play().catch(() => {});
   }
 }
