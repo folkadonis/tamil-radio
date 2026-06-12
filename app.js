@@ -1,7 +1,4 @@
-/* Set this to your Cloudflare Worker URL after deploying cors-proxy/worker.js
-   e.g. "https://tamil-radio-proxy.YOUR-NAME.workers.dev"
-   Leave empty to disable — HTTP channels won't load on HTTPS without it. */
-const CORS_PROXY = "";
+const CORS_PROXY = "https://tamil-radio-proxy.folkadonis.workers.dev";
 
 /* ===== TV Channel Data ===== */
 const TV_CHANNELS = [
@@ -86,6 +83,7 @@ const TV_CHANNELS = [
   { id:"tv74", name:"Esport3",          logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Esport3.svg/960px-Esport3.svg.png",                                                       url:"https://directes-tv-int.3catdirectes.cat/live-content/esport3-hls/master.m3u8" },
   { id:"tv75", name:"TyC Sports",       logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/TyC_Sports_logo.svg/960px-TyC_Sports_logo.svg.png",                                      url:"https://amg26268-amg26268c14-freelivesports-emea-10267.playouts.now.amagi.tv/ts-us-e2-n2/playlist/amg26268-sportsstudio-tycsports-freelivesportsemea/playlist.m3u8" },
   { id:"tv76", name:"TVRI Sport",       logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/TVRI_Sport_2022.svg/960px-TVRI_Sport_2022.svg.png",                                      url:"https://ott-balancer.tvri.go.id/live/eds/SportHD/hls/SportHD.m3u8" },
+  { id:"tv87", name:"DD Sports",        logo:"https://dtil.tmsimg.com/assets/s158255_ld_h15_aa.png?lock=720x540",                                                                                url:"https://d3qs3d2rkhfqrt.cloudfront.net/out/v1/b17adfe543354fdd8d189b110617cddd/index.m3u8", proxy:true },
   /* English / International — HTTPS + CORS verified */
   { id:"tv77", name:"Asharq Discovery", logo:"https://i.imgur.com/Czxi7yk.png",                                                                                                               url:"https://svs.itworkscdn.net/asharqdiscoverylive/asharqd.smil/playlist_dvr.m3u8" },
   { id:"tv78", name:"GEM Nature",       logo:"https://i.imgur.com/ENvOMDQ.png",                                                                                                               url:"https://ca-rt.onetv.app/gemnature/index-0.m3u8?token=onetv202" },
@@ -233,8 +231,8 @@ function renderTV() {
 /* ===== TV Player ===== */
 let tvDashInstance = null;
 
-function resolveStreamUrl(url) {
-  if (url.startsWith("http://") && CORS_PROXY) {
+function resolveStreamUrl(url, forceProxy) {
+  if (CORS_PROXY && (url.startsWith("http://") || forceProxy)) {
     return CORS_PROXY + "/?url=" + encodeURIComponent(url);
   }
   return url;
@@ -249,9 +247,9 @@ function openTVPlayer(channel) {
   if (tvHlsInstance) { tvHlsInstance.destroy(); tvHlsInstance = null; }
   if (tvDashInstance) { tvDashInstance.destroy(); tvDashInstance = null; }
 
-  const streamUrl = resolveStreamUrl(channel.url);
+  const streamUrl = resolveStreamUrl(channel.url, channel.proxy);
 
-  if (channel.url.startsWith("http://") && !CORS_PROXY) {
+  if ((channel.url.startsWith("http://") || channel.proxy) && !CORS_PROXY) {
     tvModalName.textContent = channel.name + " — needs proxy";
     tvVideo.src = "";
     return;
