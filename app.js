@@ -97,6 +97,8 @@ const TV_CHANNELS = [
   /* F1 2026 Broadcasters — verified live */
   { id:"f1a", name:"Canal+ HD",      logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Canal%2B.svg/220px-Canal%2B.svg.png",                                                    url:"http://151.80.18.177:86/Canal+_HD/index.m3u8" },
   { id:"f1b", name:"Canal+ Sport",   logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Canal%2B_Sport_1_logo.svg/220px-Canal%2B_Sport_1_logo.svg.png",                          url:"http://151.80.18.177:86/Canal+_sport_HD/index.m3u8" },
+  { id:"f1d", name:"Canal+ Cinémas", logo:"https://i.imgur.com/fvPoNEa.jpeg",                                                                                                                  url:"http://151.80.18.177:86/Canal+_cinema_HD/index.m3u8" },
+  { id:"f1e", name:"Canal+ Family",  logo:"https://i.imgur.com/TXI8hM1.png",                                                                                                                   url:"http://151.80.18.177:86/Canal+_Family_HD/index.m3u8" },
   { id:"f1c", name:"Fuji TV",        logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Fuji_TV_logo_2023.svg/240px-Fuji_TV_logo_2023.svg.png",                                  url:"https://fujitv4.mov3.co/hls/fujitv.m3u8", proxy:true },
   /* FIFA World Cup 2026 Broadcasters — verified live */
   { id:"tv88", name:"ARD Das Erste",    logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/ARD_Dachmarke_2014.svg/960px-ARD_Dachmarke_2014.svg.png",                              url:"https://s6.hopslan.com/ardX/tracks-v1a1/mono.m3u8" },
