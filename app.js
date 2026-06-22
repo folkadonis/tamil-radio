@@ -125,27 +125,76 @@ const STATIONS = [
 
 /* ===== Cartoon Data ===== */
 const CARTOONS = [
+  /* ── Jackie Chan Adventures Tamil — Complete ── */
   {
-    id: "jca-complete",
+    id: "jca-all-yt",
     name: "Jackie Chan Adventures",
-    subtitle: "Complete Collection · Tamil · All 5 Seasons",
+    subtitle: "Complete Series · All 5 Seasons · Tamil",
     cover: "https://i.ytimg.com/vi/nkgxnGq5DdY/maxresdefault.jpg",
+    source: "youtube",
     playlistId: "PLbkvxri6XK64cUFnjf81IOT3RVWSKaVJI",
     tag: "95 Episodes"
   },
   {
     id: "jca-s1-hd",
-    name: "Jackie Chan Adventures — Season 1",
-    subtitle: "1080p Remastered · Tamil HD",
+    name: "Season 1 — Tamil 1080p HD",
+    subtitle: "Jackie Chan Adventures · Remastered",
     cover: "https://i.ytimg.com/vi/A_yS9Qj9rOM/maxresdefault.jpg",
+    source: "youtube",
     playlistId: "PLGn8C4xCF194h3N4x3cL9re5WeF-mVRhE",
     tag: "13 Episodes"
   },
   {
-    id: "jca-all",
-    name: "Jackie Chan Adventures",
-    subtitle: "All Episodes · Tamil Dubbed",
+    id: "jca-s1-chutti",
+    name: "Season 1 — Chutti TV Tamil",
+    subtitle: "Jackie Chan Adventures · Original Dub · E.K.E",
+    cover: "https://i.ytimg.com/vi/nkgxnGq5DdY/maxresdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x9cpfm",
+    tag: "13 Episodes"
+  },
+  {
+    id: "jca-s2",
+    name: "Season 2 — Tamil",
+    subtitle: "Jackie Chan Adventures · Jackie Chan Tamil HD",
+    cover: "https://i.ytimg.com/vi/A_yS9Qj9rOM/maxresdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x8oilw",
+    tag: "21 Episodes"
+  },
+  {
+    id: "jca-s3",
+    name: "Season 3 — Tamil",
+    subtitle: "Jackie Chan Adventures · E.K.E Chutti TV",
+    cover: "https://i.ytimg.com/vi/A_yS9Qj9rOM/maxresdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x9berq",
+    tag: "20 Episodes"
+  },
+  {
+    id: "jca-s345",
+    name: "Seasons 3 + 4 + 5 — Tamil",
+    subtitle: "Jackie Chan Adventures · Full Episodes",
     cover: "https://i.ytimg.com/vi/Mfk8Ezb01pQ/maxresdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x5pii0",
+    tag: "61 Episodes"
+  },
+  {
+    id: "jca-fabulous",
+    name: "Jackie Chan Adventures — Tamil",
+    subtitle: "Fabulous Channel · Full Adventures Collection",
+    cover: "https://i.ytimg.com/vi/Mfk8Ezb01pQ/maxresdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x6vjy2",
+    tag: "Full Series"
+  },
+  {
+    id: "jca-all-yt2",
+    name: "Jackie Chan Adventures",
+    subtitle: "All Episodes · Tamil Dubbed Playlist",
+    cover: "https://i.ytimg.com/vi/Mfk8Ezb01pQ/maxresdefault.jpg",
+    source: "youtube",
     playlistId: "PL6ujNxkUTj6oYPAxdIuNNJ41gRPgXEqfS",
     tag: "Full Series"
   }
@@ -347,6 +396,7 @@ function renderCartoons() {
           </div>
         </div>
         <span class="cartoon-ep-tag">${c.tag}</span>
+        <span class="cartoon-src-badge cartoon-src-${c.source}">${c.source === "dailymotion" ? "DM" : "YT"}</span>
       </div>
       <div class="cartoon-meta">
         <p class="cartoon-title">${c.name}</p>
@@ -365,7 +415,10 @@ function renderCartoons() {
 /* ===== Cartoon Player ===== */
 function openCartoonPlayer(show) {
   cartoonModalName.textContent = show.name;
-  cartoonIframe.src = `https://www.youtube.com/embed/videoseries?list=${show.playlistId}&autoplay=1&rel=0`;
+  const src = show.source === "dailymotion"
+    ? `https://www.dailymotion.com/embed/playlist/${show.playlistId}?autoplay=1`
+    : `https://www.youtube.com/embed/videoseries?list=${show.playlistId}&autoplay=1&rel=0`;
+  cartoonIframe.src = src;
   cartoonModal.classList.add("open");
   document.body.style.overflow = "hidden";
 }

@@ -181,6 +181,9 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .cartoon-card:hover .cartoon-play-overlay{opacity:1}
 .cartoon-play-btn{width:56px;height:56px;border-radius:50%;background:var(--gradient);display:grid;place-items:center;color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.5)}
 .cartoon-ep-tag{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.75);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:999px;backdrop-filter:blur(4px)}
+.cartoon-src-badge{position:absolute;top:8px;left:8px;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:999px;backdrop-filter:blur(4px);letter-spacing:.5px}
+.cartoon-src-youtube{background:rgba(255,0,0,.85);color:#fff}
+.cartoon-src-dailymotion{background:rgba(0,100,220,.85);color:#fff}
 .cartoon-meta{padding:12px 14px 14px}
 .cartoon-title{font-size:.9rem;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cartoon-sub{font-size:.75rem;color:var(--text-dim)}
