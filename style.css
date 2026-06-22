@@ -169,6 +169,33 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 
 @media(max-width:640px){.tv-grid{grid-template-columns:1fr}.tv-modal-inner{margin:0;border-radius:0;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.tv-modal{align-items:stretch}#tvVideo{flex:1;aspect-ratio:unset}}
 
+/* ===== Cartoon Grid ===== */
+.cartoon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
+.cartoon-card{background:var(--bg-card);border:1px solid rgba(255,255,255,.05);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s,background .25s;opacity:0;animation:cardIn .4s ease forwards}
+[data-theme="light"] .cartoon-card{border-color:rgba(0,0,0,.06)}
+.cartoon-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.cartoon-thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:#111}
+.cartoon-img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.cartoon-card:hover .cartoon-img{transform:scale(1.04)}
+.cartoon-play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);opacity:0;transition:opacity .25s}
+.cartoon-card:hover .cartoon-play-overlay{opacity:1}
+.cartoon-play-btn{width:56px;height:56px;border-radius:50%;background:var(--gradient);display:grid;place-items:center;color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.5)}
+.cartoon-ep-tag{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.75);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:999px;backdrop-filter:blur(4px)}
+.cartoon-meta{padding:12px 14px 14px}
+.cartoon-title{font-size:.9rem;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cartoon-sub{font-size:.75rem;color:var(--text-dim)}
+
+/* ===== Cartoon Player Modal ===== */
+.cartoon-modal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.92);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.cartoon-modal.open{opacity:1;pointer-events:all}
+.cartoon-modal-inner{width:100%;max-width:960px;margin:16px;border-radius:var(--radius);overflow:hidden;transform:scale(.96);transition:transform .3s cubic-bezier(.32,1,.24,1)}
+.cartoon-modal.open .cartoon-modal-inner{transform:scale(1)}
+.cartoon-modal-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.6)}
+.cartoon-badge{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px;background:rgba(249,115,22,.12);padding:3px 8px;border-radius:999px;margin-right:8px}
+#cartoonIframe{width:100%;aspect-ratio:16/9;display:block;background:#000;border:none}
+
+@media(max-width:640px){.cartoon-grid{grid-template-columns:1fr}.cartoon-modal-inner{margin:0;border-radius:0;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.cartoon-modal{align-items:stretch}#cartoonIframe{flex:1;aspect-ratio:unset}}
+
 /* ===== Community Button ===== */
 .community-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:none;border-radius:999px;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);color:var(--text);font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap}
 [data-theme="light"] .community-btn{border-color:rgba(0,0,0,.1)}

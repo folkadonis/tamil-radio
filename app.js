@@ -123,6 +123,34 @@ const STATIONS = [
   { id: 7, name: "AIR Rainbow Chennai", freq: "101.9 MHz", region: "Chennai", cat: "india", url: "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio004/hlspbaudio00464kbps.m3u8" },
 ];
 
+/* ===== Cartoon Data ===== */
+const CARTOONS = [
+  {
+    id: "jca-complete",
+    name: "Jackie Chan Adventures",
+    subtitle: "Complete Collection · Tamil · All 5 Seasons",
+    cover: "https://i.ytimg.com/vi/nkgxnGq5DdY/maxresdefault.jpg",
+    playlistId: "PLbkvxri6XK64cUFnjf81IOT3RVWSKaVJI",
+    tag: "95 Episodes"
+  },
+  {
+    id: "jca-s1-hd",
+    name: "Jackie Chan Adventures — Season 1",
+    subtitle: "1080p Remastered · Tamil HD",
+    cover: "https://i.ytimg.com/vi/A_yS9Qj9rOM/maxresdefault.jpg",
+    playlistId: "PLGn8C4xCF194h3N4x3cL9re5WeF-mVRhE",
+    tag: "13 Episodes"
+  },
+  {
+    id: "jca-all",
+    name: "Jackie Chan Adventures",
+    subtitle: "All Episodes · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/Mfk8Ezb01pQ/maxresdefault.jpg",
+    playlistId: "PL6ujNxkUTj6oYPAxdIuNNJ41gRPgXEqfS",
+    tag: "Full Series"
+  }
+];
+
 /* ===== DOM Refs ===== */
 const grid          = document.getElementById("stationGrid");
 const tvGrid        = document.getElementById("tvGrid");
@@ -142,6 +170,11 @@ const tvModal       = document.getElementById("tvModal");
 const tvVideo       = document.getElementById("tvVideo");
 const tvModalName   = document.getElementById("tvModalName");
 const tvModalClose  = document.getElementById("tvModalClose");
+const cartoonGrid   = document.getElementById("cartoonGrid");
+const cartoonModal  = document.getElementById("cartoonModal");
+const cartoonModalName = document.getElementById("cartoonModalName");
+const cartoonModalClose = document.getElementById("cartoonModalClose");
+const cartoonIframe = document.getElementById("cartoonIframe");
 
 /* ===== State ===== */
 let currentStation = null;
@@ -299,16 +332,66 @@ function closeTVPlayer() {
 tvModalClose.addEventListener("click", closeTVPlayer);
 tvModal.addEventListener("click", e => { if (e.target === tvModal) closeTVPlayer(); });
 
+/* ===== Cartoon Render ===== */
+function renderCartoons() {
+  const query = searchInput.value.toLowerCase().trim();
+  const list  = CARTOONS.filter(c => !query || c.name.toLowerCase().includes(query) || c.subtitle.toLowerCase().includes(query));
+
+  cartoonGrid.innerHTML = list.map(c => `
+    <div class="cartoon-card" data-cid="${c.id}">
+      <div class="cartoon-thumb">
+        <img class="cartoon-img" src="${c.cover}" alt="${c.name}" onerror="this.style.display='none'">
+        <div class="cartoon-play-overlay">
+          <div class="cartoon-play-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+        <span class="cartoon-ep-tag">${c.tag}</span>
+      </div>
+      <div class="cartoon-meta">
+        <p class="cartoon-title">${c.name}</p>
+        <p class="cartoon-sub">${c.subtitle}</p>
+      </div>
+    </div>`).join("");
+
+  cartoonGrid.querySelectorAll(".cartoon-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const show = CARTOONS.find(c => c.id === card.dataset.cid);
+      if (show) openCartoonPlayer(show);
+    });
+  });
+}
+
+/* ===== Cartoon Player ===== */
+function openCartoonPlayer(show) {
+  cartoonModalName.textContent = show.name;
+  cartoonIframe.src = `https://www.youtube.com/embed/videoseries?list=${show.playlistId}&autoplay=1&rel=0`;
+  cartoonModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeCartoonPlayer() {
+  cartoonModal.classList.remove("open");
+  document.body.style.overflow = "";
+  cartoonIframe.src = "";
+}
+
+cartoonModalClose.addEventListener("click", closeCartoonPlayer);
+cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) closeCartoonPlayer(); });
+
 /* ===== Tab Switching ===== */
 function setView(cat) {
   currentCat = cat;
-  const isTV = cat === "tv";
-  grid.style.display      = isTV ? "none" : "";
-  tvGrid.style.display    = isTV ? "grid" : "none";
-  emptyState.style.display = "none";
-  searchInput.placeholder = isTV ? "Search channels..." : "Search stations...";
-  if (isTV) renderTV();
-  else      renderStations();
+  const isTV      = cat === "tv";
+  const isCartoon = cat === "cartoon";
+  grid.style.display          = (!isTV && !isCartoon) ? "" : "none";
+  tvGrid.style.display        = isTV ? "grid" : "none";
+  cartoonGrid.style.display   = isCartoon ? "grid" : "none";
+  emptyState.style.display    = "none";
+  searchInput.placeholder     = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : "Search stations...";
+  if (isTV)         renderTV();
+  else if (isCartoon) renderCartoons();
+  else              renderStations();
 }
 
 tabsEl.addEventListener("click", e => {
