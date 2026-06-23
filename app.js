@@ -197,6 +197,111 @@ const CARTOONS = [
     source: "youtube",
     playlistId: "PL6ujNxkUTj6oYPAxdIuNNJ41gRPgXEqfS",
     tag: "Full Series"
+  },
+
+  /* ── Dragon Ball Z Tamil ── */
+  {
+    id: "dbz-yt",
+    name: "Dragon Ball Z — Tamil",
+    subtitle: "Complete Series · Cartoon Network Tamil Dub",
+    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLH62PgNapEcnEXVHXE82JzHX8Y-61aduQ",
+    tag: "291 Episodes"
+  },
+  {
+    id: "dbz-dm",
+    name: "Dragon Ball Z — Tamil",
+    subtitle: "Dailymotion · All Episodes",
+    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x51fn5",
+    tag: "Full Series"
+  },
+  {
+    id: "dbz-remastered",
+    name: "Dragon Ball Z Remastered — Tamil",
+    subtitle: "Season 1 Remastered · Dailymotion",
+    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x60fql",
+    tag: "Season 1"
+  },
+  {
+    id: "dbs-yt",
+    name: "Dragon Ball Super — Tamil",
+    subtitle: "All 131 Episodes · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLH62PgNapEcl7Mw4MbNN7mU2jyxHZKWAJ",
+    tag: "131 Episodes"
+  },
+
+  /* ── Naruto Tamil ── */
+  {
+    id: "naruto-classic",
+    name: "Naruto — Tamil",
+    subtitle: "Classic Series · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/hkdC2zL4zwY/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLQ_j0Lkq8EKwrcvxB1ukBL_gSHHVr7cvA",
+    tag: "220 Episodes"
+  },
+  {
+    id: "naruto-shippuden",
+    name: "Naruto Shippuden — Tamil",
+    subtitle: "Tamil Dubbed · Full Series",
+    cover: "https://i.ytimg.com/vi/orq7R_3fRHI/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PL_b5MlKc__eiiREaN0uHgmU2ATXoxXQ9x",
+    tag: "500 Episodes"
+  },
+  {
+    id: "naruto-shippuden-s1",
+    name: "Naruto Shippuden Season 1 — Tamil",
+    subtitle: "Complete Season 1 · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/orq7R_3fRHI/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLE7uVvRJ9SFAyVJGeCcAPsTzFrtY0UTJX",
+    tag: "Season 1"
+  },
+
+  /* ── Doraemon Tamil ── */
+  {
+    id: "doraemon-eps1",
+    name: "Doraemon — Tamil Episodes",
+    subtitle: "Classic Tamil Dubbed Episodes",
+    cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLRKk870M3DQvbuzlS6i-4t4md_AEu3AJ-",
+    tag: "Episodes"
+  },
+  {
+    id: "doraemon-eps2",
+    name: "Doraemon Tamil — New Episodes",
+    subtitle: "Tamil Dubbed · 2023–2024",
+    cover: "https://i.ytimg.com/vi/fsf-oxAyCzc/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLOyx7IleZxy841jv3Oq83Q5BCVmZraEPk",
+    tag: "New Episodes"
+  },
+  {
+    id: "doraemon-movies",
+    name: "Doraemon Movies — Tamil",
+    subtitle: "All Tamil Dubbed Movies Collection",
+    cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLNzNG4iSI64XbQ_-MJqvK1bgwpznOOjH6",
+    tag: "Movies"
+  },
+  {
+    id: "doraemon-dm",
+    name: "Doraemon — Tamil (Dailymotion)",
+    subtitle: "Tamil Episodes · Dailymotion Collection",
+    cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
+    source: "dailymotion",
+    playlistId: "x75a3z",
+    tag: "Episodes"
   }
 ];
 
@@ -382,11 +487,40 @@ tvModalClose.addEventListener("click", closeTVPlayer);
 tvModal.addEventListener("click", e => { if (e.target === tvModal) closeTVPlayer(); });
 
 /* ===== Cartoon Render ===== */
+const CARTOON_SECTIONS = [
+  { prefix: ["jca"],         label: "🥋 Jackie Chan Adventures — Tamil" },
+  { prefix: ["dbz", "dbs"], label: "🐉 Dragon Ball — Tamil" },
+  { prefix: ["naruto"],      label: "🍥 Naruto — Tamil" },
+  { prefix: ["doraemon"],    label: "🤖 Doraemon — Tamil" }
+];
+
 function renderCartoons() {
   const query = searchInput.value.toLowerCase().trim();
   const list  = CARTOONS.filter(c => !query || c.name.toLowerCase().includes(query) || c.subtitle.toLowerCase().includes(query));
 
-  cartoonGrid.innerHTML = list.map(c => `
+  if (query) {
+    cartoonGrid.innerHTML = cartoonCards(list);
+  } else {
+    let html = "";
+    CARTOON_SECTIONS.forEach(sec => {
+      const items = list.filter(c => sec.prefix.some(p => c.id.startsWith(p)));
+      if (!items.length) return;
+      html += `<div class="cartoon-section-label">${sec.label}</div>`;
+      html += cartoonCards(items);
+    });
+    cartoonGrid.innerHTML = html;
+  }
+
+  cartoonGrid.querySelectorAll(".cartoon-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const show = CARTOONS.find(c => c.id === card.dataset.cid);
+      if (show) openCartoonPlayer(show);
+    });
+  });
+}
+
+function cartoonCards(list) {
+  return list.map(c => `
     <div class="cartoon-card" data-cid="${c.id}">
       <div class="cartoon-thumb">
         <img class="cartoon-img" src="${c.cover}" alt="${c.name}" onerror="this.style.display='none'">
@@ -403,13 +537,6 @@ function renderCartoons() {
         <p class="cartoon-sub">${c.subtitle}</p>
       </div>
     </div>`).join("");
-
-  cartoonGrid.querySelectorAll(".cartoon-card").forEach(card => {
-    card.addEventListener("click", () => {
-      const show = CARTOONS.find(c => c.id === card.dataset.cid);
-      if (show) openCartoonPlayer(show);
-    });
-  });
 }
 
 /* ===== Cartoon Player ===== */

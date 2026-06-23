@@ -171,6 +171,7 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 
 /* ===== Cartoon Grid ===== */
 .cartoon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
+.cartoon-section-label{grid-column:1/-1;font-size:1rem;font-weight:700;margin-top:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.07);color:var(--text)}
 .cartoon-card{background:var(--bg-card);border:1px solid rgba(255,255,255,.05);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s,background .25s;opacity:0;animation:cardIn .4s ease forwards}
 [data-theme="light"] .cartoon-card{border-color:rgba(0,0,0,.06)}
 .cartoon-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
