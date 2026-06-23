@@ -203,26 +203,35 @@ const CARTOONS = [
   {
     id: "dbz-yt",
     name: "Dragon Ball Z — Tamil",
-    subtitle: "Complete Series · Cartoon Network Tamil Dub",
-    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    subtitle: "Full Episodes · Cartoon Network Tamil Dub",
+    cover: "https://i.ytimg.com/vi/DXNp0B_1pac/hqdefault.jpg",
     source: "youtube",
     playlistId: "PLH62PgNapEcnEXVHXE82JzHX8Y-61aduQ",
     tag: "291 Episodes"
   },
   {
+    id: "dbz-kai",
+    name: "Dragon Ball Z Kai — Tamil",
+    subtitle: "DBZ Kai Episodes · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/DXNp0B_1pac/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PL2iIw51sJzxC0yt7z7IgIV9LytLzv5XTx",
+    tag: "167 Episodes"
+  },
+  {
     id: "dbz-dm",
-    name: "Dragon Ball Z — Tamil",
-    subtitle: "Dailymotion · All Episodes",
-    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    name: "Dragon Ball Z — Tamil (Dailymotion)",
+    subtitle: "All Episodes · Dailymotion",
+    cover: "https://i.ytimg.com/vi/DXNp0B_1pac/hqdefault.jpg",
     source: "dailymotion",
     playlistId: "x51fn5",
     tag: "Full Series"
   },
   {
-    id: "dbz-remastered",
-    name: "Dragon Ball Z Remastered — Tamil",
+    id: "dbz-s1-dm",
+    name: "Dragon Ball Z Remastered S1 — Tamil",
     subtitle: "Season 1 Remastered · Dailymotion",
-    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    cover: "https://i.ytimg.com/vi/DXNp0B_1pac/hqdefault.jpg",
     source: "dailymotion",
     playlistId: "x60fql",
     tag: "Season 1"
@@ -231,7 +240,7 @@ const CARTOONS = [
     id: "dbs-yt",
     name: "Dragon Ball Super — Tamil",
     subtitle: "All 131 Episodes · Tamil Dubbed",
-    cover: "https://i.ytimg.com/vi/uJJTdSJgx80/hqdefault.jpg",
+    cover: "https://i.ytimg.com/vi/DXNp0B_1pac/hqdefault.jpg",
     source: "youtube",
     playlistId: "PLH62PgNapEcl7Mw4MbNN7mU2jyxHZKWAJ",
     tag: "131 Episodes"
@@ -239,18 +248,36 @@ const CARTOONS = [
 
   /* ── Naruto Tamil ── */
   {
-    id: "naruto-classic",
-    name: "Naruto — Tamil",
-    subtitle: "Classic Series · Tamil Dubbed",
-    cover: "https://i.ytimg.com/vi/hkdC2zL4zwY/hqdefault.jpg",
+    id: "naruto-c1",
+    name: "Naruto Classic — Tamil",
+    subtitle: "Full Episodes · Tamil Dubbed",
+    cover: "https://i.ytimg.com/vi/Yl3SXNU5uk8/hqdefault.jpg",
     source: "youtube",
-    playlistId: "PLQ_j0Lkq8EKwrcvxB1ukBL_gSHHVr7cvA",
+    playlistId: "PL7N7UsVwnaraeRXFJmqLIk-YGwUhFKKhD",
     tag: "220 Episodes"
+  },
+  {
+    id: "naruto-c2",
+    name: "Naruto Classic — Tamil",
+    subtitle: "Complete Episodes · Tamil Dub",
+    cover: "https://i.ytimg.com/vi/Yl3SXNU5uk8/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLubMghxR-Pcyzp6kfnQfNZXMRRwCigcs9",
+    tag: "Episodes"
+  },
+  {
+    id: "naruto-c3",
+    name: "Naruto — Tamil",
+    subtitle: "Tamil Dubbed Episodes Collection",
+    cover: "https://i.ytimg.com/vi/Yl3SXNU5uk8/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLGw11TvoHmd800mWxza8Nhik1AYRFpyWn",
+    tag: "Episodes"
   },
   {
     id: "naruto-shippuden",
     name: "Naruto Shippuden — Tamil",
-    subtitle: "Tamil Dubbed · Full Series",
+    subtitle: "Tamil Dubbed Episodes",
     cover: "https://i.ytimg.com/vi/orq7R_3fRHI/hqdefault.jpg",
     source: "youtube",
     playlistId: "PL_b5MlKc__eiiREaN0uHgmU2ATXoxXQ9x",
@@ -270,7 +297,7 @@ const CARTOONS = [
   {
     id: "doraemon-eps1",
     name: "Doraemon — Tamil Episodes",
-    subtitle: "Classic Tamil Dubbed Episodes",
+    subtitle: "Tamil Dubbed Episodes Collection",
     cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
     source: "youtube",
     playlistId: "PLRKk870M3DQvbuzlS6i-4t4md_AEu3AJ-",
@@ -278,8 +305,8 @@ const CARTOONS = [
   },
   {
     id: "doraemon-eps2",
-    name: "Doraemon Tamil — New Episodes",
-    subtitle: "Tamil Dubbed · 2023–2024",
+    name: "Doraemon — Tamil New Episodes",
+    subtitle: "Tamil Dubbed · 2023–2024 New Episodes",
     cover: "https://i.ytimg.com/vi/fsf-oxAyCzc/hqdefault.jpg",
     source: "youtube",
     playlistId: "PLOyx7IleZxy841jv3Oq83Q5BCVmZraEPk",
@@ -288,7 +315,7 @@ const CARTOONS = [
   {
     id: "doraemon-movies",
     name: "Doraemon Movies — Tamil",
-    subtitle: "All Tamil Dubbed Movies Collection",
+    subtitle: "All Tamil Dubbed Movies",
     cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
     source: "youtube",
     playlistId: "PLNzNG4iSI64XbQ_-MJqvK1bgwpznOOjH6",
@@ -297,7 +324,7 @@ const CARTOONS = [
   {
     id: "doraemon-dm",
     name: "Doraemon — Tamil (Dailymotion)",
-    subtitle: "Tamil Episodes · Dailymotion Collection",
+    subtitle: "Tamil Episodes · Dailymotion",
     cover: "https://i.ytimg.com/vi/U__SvPlssHE/hqdefault.jpg",
     source: "dailymotion",
     playlistId: "x75a3z",
@@ -488,10 +515,10 @@ tvModal.addEventListener("click", e => { if (e.target === tvModal) closeTVPlayer
 
 /* ===== Cartoon Render ===== */
 const CARTOON_SECTIONS = [
-  { prefix: ["jca"],         label: "🥋 Jackie Chan Adventures — Tamil" },
-  { prefix: ["dbz", "dbs"], label: "🐉 Dragon Ball — Tamil" },
-  { prefix: ["naruto"],      label: "🍥 Naruto — Tamil" },
-  { prefix: ["doraemon"],    label: "🤖 Doraemon — Tamil" }
+  { prefix: ["jca"],               label: "🥋 Jackie Chan Adventures — Tamil" },
+  { prefix: ["dbz", "dbs"],        label: "🐉 Dragon Ball — Tamil" },
+  { prefix: ["naruto"],            label: "🍥 Naruto — Tamil" },
+  { prefix: ["doraemon"],          label: "🤖 Doraemon — Tamil" }
 ];
 
 function renderCartoons() {
