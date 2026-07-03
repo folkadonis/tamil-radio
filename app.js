@@ -607,6 +607,111 @@ const COMBAT_CHANNELS = [
 const sportsGrid = document.getElementById("sportsGrid");
 let sportsCache = null, sportsCacheTime = 0, sportsAutoRefresh = null;
 
+/* ── UFC & Boxing schedule (TheSportsDB, CORS-open) ── */
+const FIGHT_LEAGUES = [
+  { id: 4443, tag: "UFC" },
+  { id: 4445, tag: "Boxing" }
+];
+let fightCache = null, fightCacheTime = 0;
+
+async function fetchFightEvents() {
+  if (fightCache && Date.now() - fightCacheTime < 30 * 60 * 1000) return fightCache;
+  const results = await Promise.allSettled(FIGHT_LEAGUES.map(l =>
+    fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsnextleague.php?id=${l.id}`)
+      .then(r => r.json())
+      .then(d => (d.events || []).map(e => ({
+        id:     "fx" + e.idEvent,
+        league: l.tag,
+        title:  e.strEvent || "",
+        ts:     e.strTimestamp ? new Date(e.strTimestamp + "Z").getTime() : 0
+      })))
+  ));
+  const events = results
+    .flatMap(r => r.status === "fulfilled" ? r.value : [])
+    .filter(e => e.title && e.ts)
+    .sort((a, b) => a.ts - b.ts);
+  fightCache = events;
+  fightCacheTime = Date.now();
+  return events;
+}
+
+function fightStatus(e) {
+  const now = Date.now();
+  if (now < e.ts) return "upcoming";
+  if (now > e.ts + 6 * 3600000) return "ended";
+  return "live";
+}
+
+function refreshFightEvents() {
+  const el = document.getElementById("fightSection");
+  if (!el) return;
+  fetchFightEvents().then(events => {
+    const target = document.getElementById("fightSection");
+    if (!target) return;
+    if (!events.length) { target.innerHTML = ""; return; }
+
+    const istDay  = ts => new Date(ts).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
+    const istTime = ts => new Date(ts).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+    const todayLabel = istDay(Date.now());
+
+    const groups = new Map();
+    events.forEach(e => {
+      const key = istDay(e.ts);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
+    });
+
+    let html = `
+      <div class="sports-header" style="margin-top:30px">
+        <span class="sports-title">Fight Schedule</span>
+        <span class="combat-247">UFC · Boxing</span>
+      </div>`;
+    groups.forEach((list, day) => {
+      html += `<div class="sports-day-group">
+        <div class="sports-day-label">
+          <span class="sports-day-pill ${day === todayLabel ? "pill-today" : "pill-upcoming"}">${day === todayLabel ? "Today" : "Upcoming"}</span>
+          <span class="sports-day-date">${day}</span>
+        </div>
+        ${list.map(e => {
+          const st = fightStatus(e);
+          const badge = st === "live"
+            ? `<span class="match-status live">LIVE</span>`
+            : st === "ended"
+            ? `<span class="match-status ended">ENDED</span>`
+            : `<span class="match-status upcoming">UPCOMING</span>`;
+          const watch = st === "live"
+            ? `<div class="fight-watch"><span class="fight-watch-label">Watch on:</span>
+                 <button class="match-srv-btn" data-fw="cb3">MMA TV</button>
+                 <button class="match-srv-btn" data-fw="cb2">FightBox</button>
+               </div>`
+            : "";
+          return `<div class="fight-card">
+            <div class="fight-main">
+              <span class="fight-league ${e.league === "UFC" ? "fl-ufc" : "fl-box"}">${e.league}</span>
+              <div class="fight-info">
+                <p class="fight-title">${e.title}</p>
+                <p class="fight-time">${istTime(e.ts)} IST</p>
+              </div>
+              ${badge}
+            </div>
+            ${watch}
+          </div>`;
+        }).join("")}
+      </div>`;
+    });
+    target.innerHTML = html;
+    target.querySelectorAll("[data-fw]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ch = COMBAT_CHANNELS.find(c => c.id === btn.dataset.fw);
+        if (ch) openTVPlayer({ id: ch.id, name: "🥊 " + ch.name, url: ch.url });
+      });
+    });
+  }).catch(() => {
+    const target = document.getElementById("fightSection");
+    if (target) target.innerHTML = "";
+  });
+}
+
 async function fetchSportsMatches() {
   if (sportsCache && Date.now() - sportsCacheTime < 5 * 60 * 1000) return sportsCache;
   const base = CORS_PROXY + "/?url=";
@@ -786,6 +891,7 @@ function renderSports() {
           <p class="combat-tag">${c.tag}</p>
         </div>`).join("")}
     </div>
+    <div id="fightSection"></div>
     <div class="sports-header" style="margin-top:30px">
       <span class="sports-title">Football — Live Matches</span>
       <div class="sports-header-right">
@@ -808,9 +914,11 @@ function renderSports() {
     refreshSportsMatches();
   });
   refreshSportsMatches();
+  refreshFightEvents();
   sportsAutoRefresh = setInterval(() => {
     sportsCache = null; sportsCacheTime = 0;
     refreshSportsMatches();
+    refreshFightEvents();
   }, 2 * 60 * 1000);
 }
 
