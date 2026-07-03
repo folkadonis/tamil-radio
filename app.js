@@ -600,33 +600,42 @@ let sportsCache = null, sportsCacheTime = 0;
 
 async function fetchSportsMatches() {
   if (sportsCache && Date.now() - sportsCacheTime < 5 * 60 * 1000) return sportsCache;
-  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent("https://www.epicsports.in/")).then(r => r.text());
-  const doc  = new DOMParser().parseFromString(html, "text/html");
-  const map  = new Map();
-  doc.querySelectorAll(".match-event").forEach(el => {
-    const link  = el.querySelector("a[id='match-live']");
-    const title = link?.getAttribute("title") || "";
-    if (!title) return;
-    if (!map.has(title)) {
-      map.set(title, {
-        id:      title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        title,
-        t1:      { name: el.querySelector(".first-team .team-name")?.textContent.trim() || "", logo: el.querySelector(".first-team .team-logo img")?.getAttribute("src") || "" },
-        t2:      { name: el.querySelector(".left-team .team-name")?.textContent.trim()  || "", logo: el.querySelector(".left-team .team-logo img")?.getAttribute("src")  || "" },
-        time:    el.querySelector("#match-hour")?.textContent.trim() || "",
-        comp:    el.querySelector(".match-info")?.textContent.trim() || "",
-        startAt: el.querySelector("[data-start]")?.getAttribute("data-start")     || "",
-        gameEnds:el.querySelector("[data-gameends]")?.getAttribute("data-gameends") || "",
-        servers: []
-      });
-    }
-    const href = link?.getAttribute("href") || "";
-    if (!href) return;
-    const m = map.get(title);
-    if (href.includes("goatsports") && !m.servers.includes(href)) m.servers.unshift(href);
-    else if (!m.servers.includes(href)) m.servers.push(href);
-  });
-  sportsCache = [...map.values()];
+  const base = CORS_PROXY + "/?url=";
+  const [todayHtml, upcomingHtml] = await Promise.all([
+    fetch(base + encodeURIComponent("https://www.epicsports.in/")).then(r => r.text()),
+    fetch(base + encodeURIComponent("https://www.epicsports.in/?view=tomo")).then(r => r.text())
+  ]);
+
+  function parseMatches(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const map = new Map();
+    doc.querySelectorAll(".match-event").forEach(el => {
+      const link  = el.querySelector("a[id='match-live']");
+      const title = link?.getAttribute("title") || "";
+      if (!title) return;
+      if (!map.has(title)) {
+        map.set(title, {
+          id:      title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          title,
+          t1:      { name: el.querySelector(".first-team .team-name")?.textContent.trim() || "", logo: el.querySelector(".first-team .team-logo img")?.getAttribute("src") || "" },
+          t2:      { name: el.querySelector(".left-team .team-name")?.textContent.trim()  || "", logo: el.querySelector(".left-team .team-logo img")?.getAttribute("src")  || "" },
+          time:    el.querySelector("#match-hour")?.textContent.trim() || "",
+          comp:    el.querySelector(".match-info")?.textContent.trim() || "",
+          startAt: el.querySelector("[data-start]")?.getAttribute("data-start")     || "",
+          gameEnds:el.querySelector("[data-gameends]")?.getAttribute("data-gameends") || "",
+          servers: []
+        });
+      }
+      const href = link?.getAttribute("href") || "";
+      if (!href || href === "#") return;
+      const m = map.get(title);
+      if (href.includes("goatsports") && !m.servers.includes(href)) m.servers.unshift(href);
+      else if (!m.servers.includes(href)) m.servers.push(href);
+    });
+    return [...map.values()];
+  }
+
+  sportsCache = { today: parseMatches(todayHtml), upcoming: parseMatches(upcomingHtml) };
   sportsCacheTime = Date.now();
   return sportsCache;
 }
@@ -639,48 +648,77 @@ function matchStatus(m) {
   return "live";
 }
 
+function matchCards(matches) {
+  return matches.map(m => {
+    const st = matchStatus(m);
+    const badge = st === "live"
+      ? `<span class="match-status live"><span class="live-dot"></span> LIVE</span>`
+      : st === "upcoming"
+      ? `<span class="match-status upcoming">UPCOMING</span>`
+      : st === "ended"
+      ? `<span class="match-status ended">ENDED</span>`
+      : `<span class="match-status stream">STREAM</span>`;
+    return `<div class="match-card" data-matchid="${m.id}">
+      <div class="match-team">
+        <img class="match-flag" src="${m.t1.logo}" alt="${m.t1.name}" onerror="this.style.opacity='.25'">
+        <span class="match-tname">${m.t1.name}</span>
+      </div>
+      <div class="match-center">
+        <div class="match-vs-box"><span class="match-vs">VS</span>${badge}</div>
+        <div class="match-time-line">${m.time} IST</div>
+        <div class="match-comp">${m.comp}</div>
+      </div>
+      <div class="match-team">
+        <img class="match-flag" src="${m.t2.logo}" alt="${m.t2.name}" onerror="this.style.opacity='.25'">
+        <span class="match-tname">${m.t2.name}</span>
+      </div>
+      <div class="match-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg></div>
+    </div>`;
+  }).join("");
+}
+
 function renderSports() {
   sportsGrid.innerHTML = `
     <div class="sports-header">
-      <span class="sports-title">⚽ Today's Matches</span>
+      <span class="sports-title">⚽ Live Matches</span>
       <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
     </div>
     <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
   document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
     sportsCache = null; sportsCacheTime = 0; renderSports();
   });
-  fetchSportsMatches().then(matches => {
+  fetchSportsMatches().then(({ today, upcoming }) => {
     const el = document.getElementById("sportsMatches");
-    if (!matches.length) { el.innerHTML = `<div class="sports-empty">No matches scheduled today.</div>`; return; }
-    el.innerHTML = matches.map(m => {
-      const st = matchStatus(m);
-      const badge = st === "live"
-        ? `<span class="match-status live"><span class="live-dot"></span> LIVE</span>`
-        : st === "upcoming"
-        ? `<span class="match-status upcoming">UPCOMING</span>`
-        : st === "ended"
-        ? `<span class="match-status ended">ENDED</span>`
-        : `<span class="match-status stream">STREAM</span>`;
-      return `<div class="match-card" data-matchid="${m.id}">
-        <div class="match-team">
-          <img class="match-flag" src="${m.t1.logo}" alt="${m.t1.name}" onerror="this.style.opacity='.25'">
-          <span class="match-tname">${m.t1.name}</span>
+    if (!today.length && !upcoming.length) {
+      el.innerHTML = `<div class="sports-empty">No matches scheduled today.</div>`;
+      return;
+    }
+    const allMatches = [...today, ...upcoming];
+    const todayDate  = new Date().toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+    let html = "";
+    if (today.length) {
+      html += `<div class="sports-day-group">
+        <div class="sports-day-label">
+          <span class="sports-day-pill pill-today">Live Today</span>
+          <span class="sports-day-date">${todayDate}</span>
+          <span class="sports-day-count">${today.length} match${today.length > 1 ? "es" : ""}</span>
         </div>
-        <div class="match-center">
-          <div class="match-vs-box"><span class="match-vs">VS</span>${badge}</div>
-          <div class="match-time-line">${m.time} IST</div>
-          <div class="match-comp">${m.comp}</div>
-        </div>
-        <div class="match-team">
-          <img class="match-flag" src="${m.t2.logo}" alt="${m.t2.name}" onerror="this.style.opacity='.25'">
-          <span class="match-tname">${m.t2.name}</span>
-        </div>
-        <div class="match-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg></div>
+        ${matchCards(today)}
       </div>`;
-    }).join("");
+    }
+    if (upcoming.length) {
+      html += `<div class="sports-day-group">
+        <div class="sports-day-label">
+          <span class="sports-day-pill pill-upcoming">Upcoming</span>
+          <span class="sports-day-count">${upcoming.length} match${upcoming.length > 1 ? "es" : ""}</span>
+        </div>
+        ${matchCards(upcoming)}
+      </div>`;
+    }
+    el.innerHTML = html;
     el.querySelectorAll(".match-card").forEach(card => {
       card.addEventListener("click", () => {
-        const match = matches.find(m => m.id === card.dataset.matchid);
+        const match = allMatches.find(m => m.id === card.dataset.matchid);
         if (match) loadMatchStream(match, card);
       });
     });

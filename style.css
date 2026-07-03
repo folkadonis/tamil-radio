@@ -251,4 +251,11 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .match-play-btn{width:38px;height:38px;border-radius:50%;background:var(--gradient);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(249,115,22,.3)}
 .match-spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
+.sports-day-group{margin-bottom:24px}
+.sports-day-label{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.sports-day-pill{font-size:.64rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 12px;border-radius:999px}
+.pill-today{background:rgba(224,25,11,.12);color:#e0190b;border:1px solid rgba(224,25,11,.25)}
+.pill-upcoming{background:rgba(19,182,25,.1);color:#13b619;border:1px solid rgba(19,182,25,.2)}
+.sports-day-date{font-size:.72rem;color:var(--text-dim)}
+.sports-day-count{font-size:.68rem;color:var(--text-dim);margin-left:auto;font-variant-numeric:tabular-nums}
 @media(max-width:480px){.match-flag{width:40px;height:40px}.match-team{width:62px}.match-comp{max-width:110px}}
