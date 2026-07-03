@@ -595,6 +595,15 @@ cartoonModalClose.addEventListener("click", closeCartoonPlayer);
 cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) closeCartoonPlayer(); });
 
 /* ===== Sports ===== */
+/* Combat channels — live-tested, CORS-verified 24/7 streams */
+const COMBAT_CHANNELS = [
+  { id:"cb1", name:"GLORY Kickboxing", tag:"Kickboxing",   logo:"https://i.imgur.com/tS7Ub7i.png", url:"https://6f972d29.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0dsb3J5S2lja2JveGluZ19ITFM/playlist.m3u8" },
+  { id:"cb2", name:"FightBox",         tag:"Boxing · MMA", logo:"https://i.imgur.com/mRsnztA.png", url:"https://webtvstream.bhtelecom.ba/hls7/fightbox.m3u8" },
+  { id:"cb3", name:"MMA TV",           tag:"MMA",          logo:"https://i.imgur.com/QhdxNsB.png", url:"https://streams2.sofast.tv/vglive-sk-462904/playlist.m3u8" },
+  { id:"cb4", name:"Swerve Combat",    tag:"Combat Sports",logo:"https://i.imgur.com/GT0Yi2T.png", url:"https://linear-253.frequency.stream/mt/roku/253/hls/master/playlist.m3u8" },
+  { id:"cb5", name:"TVS Boxing",       tag:"Classic Boxing",logo:"https://i.imgur.com/30ZoF75.png", url:"https://rpn.bozztv.com/gusa/gusa-tvsboxing/index.m3u8" },
+];
+
 const sportsGrid = document.getElementById("sportsGrid");
 let sportsCache = null, sportsCacheTime = 0, sportsAutoRefresh = null;
 
@@ -764,13 +773,33 @@ function renderSports() {
   if (sportsAutoRefresh) { clearInterval(sportsAutoRefresh); sportsAutoRefresh = null; }
   sportsGrid.innerHTML = `
     <div class="sports-header">
-      <span class="sports-title">⚽ Live Matches</span>
+      <span class="sports-title">Boxing &amp; MMA</span>
+      <span class="combat-247">Live 24/7</span>
+    </div>
+    <div class="combat-grid">
+      ${COMBAT_CHANNELS.map(c => `
+        <div class="combat-card" data-cbid="${c.id}">
+          <div class="combat-logo-wrap">
+            <img class="combat-logo" src="${c.logo}" alt="${c.name}" onerror="this.style.display='none'">
+          </div>
+          <p class="combat-name">${c.name}</p>
+          <p class="combat-tag">${c.tag}</p>
+        </div>`).join("")}
+    </div>
+    <div class="sports-header" style="margin-top:30px">
+      <span class="sports-title">Football — Live Matches</span>
       <div class="sports-header-right">
         <span class="sports-last-updated" id="sportsLastUpdated"></span>
         <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
       </div>
     </div>
     <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
+  sportsGrid.querySelectorAll(".combat-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const ch = COMBAT_CHANNELS.find(c => c.id === card.dataset.cbid);
+      if (ch) openTVPlayer({ id: ch.id, name: "🥊 " + ch.name, url: ch.url });
+    });
+  });
   document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
     sportsCache = null; sportsCacheTime = 0;
     document.getElementById("sportsMatches").innerHTML = `<div class="sports-loading"><span class="match-spin"></span>Loading matches…</div>`;
