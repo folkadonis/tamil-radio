@@ -658,21 +658,26 @@ function matchCards(matches) {
       : st === "ended"
       ? `<span class="match-status ended">ENDED</span>`
       : `<span class="match-status stream">STREAM</span>`;
+    const serversHtml = m.servers.length
+      ? m.servers.map((srv, i) => `<button class="match-srv-btn" data-srv="${srv}"><svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M8 5v14l11-7z"/></svg> Server ${i + 1}</button>`).join("")
+      : `<span class="match-no-srv">Streams will appear before kick-off</span>`;
     return `<div class="match-card" data-matchid="${m.id}">
-      <div class="match-team">
-        <img class="match-flag" src="${m.t1.logo}" alt="${m.t1.name}" onerror="this.style.opacity='.25'">
-        <span class="match-tname">${m.t1.name}</span>
+      <div class="match-main">
+        <div class="match-team">
+          <img class="match-flag" src="${m.t1.logo}" alt="${m.t1.name}" onerror="this.style.opacity='.25'">
+          <span class="match-tname">${m.t1.name}</span>
+        </div>
+        <div class="match-center">
+          <div class="match-vs-box"><span class="match-vs">VS</span>${badge}</div>
+          <div class="match-time-line">${m.time} IST</div>
+          <div class="match-comp">${m.comp}</div>
+        </div>
+        <div class="match-team">
+          <img class="match-flag" src="${m.t2.logo}" alt="${m.t2.name}" onerror="this.style.opacity='.25'">
+          <span class="match-tname">${m.t2.name}</span>
+        </div>
       </div>
-      <div class="match-center">
-        <div class="match-vs-box"><span class="match-vs">VS</span>${badge}</div>
-        <div class="match-time-line">${m.time} IST</div>
-        <div class="match-comp">${m.comp}</div>
-      </div>
-      <div class="match-team">
-        <img class="match-flag" src="${m.t2.logo}" alt="${m.t2.name}" onerror="this.style.opacity='.25'">
-        <span class="match-tname">${m.t2.name}</span>
-      </div>
-      <div class="match-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg></div>
+      <div class="match-servers">${serversHtml}</div>
     </div>`;
   }).join("");
 }
@@ -716,10 +721,12 @@ function renderSports() {
       </div>`;
     }
     el.innerHTML = html;
-    el.querySelectorAll(".match-card").forEach(card => {
-      card.addEventListener("click", () => {
+    el.querySelectorAll(".match-srv-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const card = btn.closest(".match-card");
         const match = allMatches.find(m => m.id === card.dataset.matchid);
-        if (match) loadMatchStream(match, card);
+        const serverUrl = btn.dataset.srv;
+        if (match && serverUrl) loadMatchStream(match, serverUrl, btn);
       });
     });
   }).catch(() => {
@@ -728,30 +735,35 @@ function renderSports() {
   });
 }
 
-async function resolveMatchStreamUrl() {
+async function resolveStreamFromServer(serverUrl) {
   const proxy = CORS_PROXY + "/?url=";
-  const html1 = await fetch(proxy + encodeURIComponent("https://www.goatsports.xyz/p/most-attended-fifa-world-cup-matches-in.html")).then(r => r.text());
-  const livez  = html1.match(/https?:\/\/livezwc\d+\.blogspot\.com\/p\/[^\s"'<>]*/);
+  const html1 = await fetch(proxy + encodeURIComponent(serverUrl)).then(r => r.text());
+  function extractM3u8(html) {
+    const urls = [];
+    for (const hit of html.matchAll(/(?:\?x=|\?url=)(https?[^"'<>&\s\\]+\.m3u8[^"'<>&\s\\]*)/gi)) {
+      const u = decodeURIComponent(hit[1]).split("?parentOrigin")[0].split("\\")[0];
+      if (!urls.includes(u)) urls.push(u);
+    }
+    return urls.find(u => !u.includes("cloudflarestream.com")) || urls[0] || null;
+  }
+  const direct = extractM3u8(html1);
+  if (direct) return direct;
+  const livez = html1.match(/https?:\/\/livezwc\d+\.blogspot\.com\/p\/[^\s"'<>]*/);
   if (!livez) return null;
   const html2 = await fetch(proxy + encodeURIComponent(livez[0])).then(r => r.text());
-  const urls  = [];
-  for (const hit of html2.matchAll(/(?:\?x=|\?url=)(https?[^"'<>&\s\\]+\.m3u8[^"'<>&\s\\]*)/gi)) {
-    const u = decodeURIComponent(hit[1]).split("?parentOrigin")[0].split("\\")[0];
-    if (!urls.includes(u)) urls.push(u);
-  }
-  return urls.find(u => !u.includes("cloudflarestream.com")) || urls[0] || null;
+  return extractM3u8(html2);
 }
 
-async function loadMatchStream(match, card) {
-  card.classList.add("match-loading");
+async function loadMatchStream(match, serverUrl, btn) {
+  btn.classList.add("srv-loading");
   try {
-    const url = await resolveMatchStreamUrl();
+    const url = await resolveStreamFromServer(serverUrl);
     if (!url) { alert("Stream not available right now. Try again in a few minutes."); return; }
     openTVPlayer({ id: match.id, name: "⚽ " + match.title, url, proxy: url.startsWith("http://") });
   } catch (e) {
     alert("Could not load stream: " + e.message);
   } finally {
-    card.classList.remove("match-loading");
+    btn.classList.remove("srv-loading");
   }
 }
 
