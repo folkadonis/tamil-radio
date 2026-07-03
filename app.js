@@ -110,8 +110,6 @@ const TV_CHANNELS = [
   { id:"tv94", name:"Turkmenistan Sport",logo:"https://i.imgur.com/n6vITLu.png",                                                                                                               url:"https://alpha.tv.online.tm/hls/ch004.m3u8", proxy:true },
   { id:"tv95", name:"BTV National",     logo:"https://i.imgur.com/5OE2FDt.png",                                                                                                                url:"https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/1709.m3u8" },
   { id:"tv96", name:"Somoy TV",         logo:"https://i.imgur.com/i54AQic.png",                                                                                                                url:"https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8" },
-  /* EpicSports — Live Football Streams */
-  { id:"epic1", name:"⚽ EpicSports — Football Live", logo:"https://i.imgur.com/BURPHzI.png", type:"external", url:"https://www.epicsports.in/", subtitle:"FIFA WC 2026 · Live Match Streams" },
 ];
 
 /* ===== Radio Station Data ===== */
@@ -596,19 +594,145 @@ function closeCartoonPlayer() {
 cartoonModalClose.addEventListener("click", closeCartoonPlayer);
 cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) closeCartoonPlayer(); });
 
+/* ===== Sports ===== */
+const sportsGrid = document.getElementById("sportsGrid");
+let sportsCache = null, sportsCacheTime = 0;
+
+async function fetchSportsMatches() {
+  if (sportsCache && Date.now() - sportsCacheTime < 5 * 60 * 1000) return sportsCache;
+  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent("https://www.epicsports.in/")).then(r => r.text());
+  const doc  = new DOMParser().parseFromString(html, "text/html");
+  const map  = new Map();
+  doc.querySelectorAll(".match-event").forEach(el => {
+    const link  = el.querySelector("a[id='match-live']");
+    const title = link?.getAttribute("title") || "";
+    if (!title) return;
+    if (!map.has(title)) {
+      map.set(title, {
+        id:      title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        title,
+        t1:      { name: el.querySelector(".first-team .team-name")?.textContent.trim() || "", logo: el.querySelector(".first-team .team-logo img")?.getAttribute("src") || "" },
+        t2:      { name: el.querySelector(".left-team .team-name")?.textContent.trim()  || "", logo: el.querySelector(".left-team .team-logo img")?.getAttribute("src")  || "" },
+        time:    el.querySelector("#match-hour")?.textContent.trim() || "",
+        comp:    el.querySelector(".match-info")?.textContent.trim() || "",
+        startAt: el.querySelector("[data-start]")?.getAttribute("data-start")     || "",
+        gameEnds:el.querySelector("[data-gameends]")?.getAttribute("data-gameends") || "",
+        servers: []
+      });
+    }
+    const href = link?.getAttribute("href") || "";
+    if (!href) return;
+    const m = map.get(title);
+    if (href.includes("goatsports") && !m.servers.includes(href)) m.servers.unshift(href);
+    else if (!m.servers.includes(href)) m.servers.push(href);
+  });
+  sportsCache = [...map.values()];
+  sportsCacheTime = Date.now();
+  return sportsCache;
+}
+
+function matchStatus(m) {
+  if (!m.startAt) return "stream";
+  const now = Date.now(), start = new Date(m.startAt).getTime(), ends = m.gameEnds ? new Date(m.gameEnds).getTime() : start + 7200000;
+  if (now < start) return "upcoming";
+  if (now > ends)  return "ended";
+  return "live";
+}
+
+function renderSports() {
+  sportsGrid.innerHTML = `
+    <div class="sports-header">
+      <span class="sports-title">⚽ Today's Matches</span>
+      <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
+    </div>
+    <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
+  document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
+    sportsCache = null; sportsCacheTime = 0; renderSports();
+  });
+  fetchSportsMatches().then(matches => {
+    const el = document.getElementById("sportsMatches");
+    if (!matches.length) { el.innerHTML = `<div class="sports-empty">No matches scheduled today.</div>`; return; }
+    el.innerHTML = matches.map(m => {
+      const st = matchStatus(m);
+      const badge = st === "live"
+        ? `<span class="match-status live"><span class="live-dot"></span> LIVE</span>`
+        : st === "upcoming"
+        ? `<span class="match-status upcoming">UPCOMING</span>`
+        : st === "ended"
+        ? `<span class="match-status ended">ENDED</span>`
+        : `<span class="match-status stream">STREAM</span>`;
+      return `<div class="match-card" data-matchid="${m.id}">
+        <div class="match-team">
+          <img class="match-flag" src="${m.t1.logo}" alt="${m.t1.name}" onerror="this.style.opacity='.25'">
+          <span class="match-tname">${m.t1.name}</span>
+        </div>
+        <div class="match-center">
+          <div class="match-vs-box"><span class="match-vs">VS</span>${badge}</div>
+          <div class="match-time-line">${m.time} IST</div>
+          <div class="match-comp">${m.comp}</div>
+        </div>
+        <div class="match-team">
+          <img class="match-flag" src="${m.t2.logo}" alt="${m.t2.name}" onerror="this.style.opacity='.25'">
+          <span class="match-tname">${m.t2.name}</span>
+        </div>
+        <div class="match-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg></div>
+      </div>`;
+    }).join("");
+    el.querySelectorAll(".match-card").forEach(card => {
+      card.addEventListener("click", () => {
+        const match = matches.find(m => m.id === card.dataset.matchid);
+        if (match) loadMatchStream(match, card);
+      });
+    });
+  }).catch(() => {
+    const el = document.getElementById("sportsMatches");
+    if (el) el.innerHTML = `<div class="sports-empty">Failed to load matches. Check your connection.</div>`;
+  });
+}
+
+async function resolveMatchStreamUrl() {
+  const proxy = CORS_PROXY + "/?url=";
+  const html1 = await fetch(proxy + encodeURIComponent("https://www.goatsports.xyz/p/most-attended-fifa-world-cup-matches-in.html")).then(r => r.text());
+  const livez  = html1.match(/https?:\/\/livezwc\d+\.blogspot\.com\/p\/[^\s"'<>]*/);
+  if (!livez) return null;
+  const html2 = await fetch(proxy + encodeURIComponent(livez[0])).then(r => r.text());
+  const urls  = [];
+  for (const hit of html2.matchAll(/(?:\?x=|\?url=)(https?[^"'<>&\s\\]+\.m3u8[^"'<>&\s\\]*)/gi)) {
+    const u = decodeURIComponent(hit[1]).split("?parentOrigin")[0].split("\\")[0];
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return urls.find(u => !u.includes("cloudflarestream.com")) || urls[0] || null;
+}
+
+async function loadMatchStream(match, card) {
+  card.classList.add("match-loading");
+  try {
+    const url = await resolveMatchStreamUrl();
+    if (!url) { alert("Stream not available right now. Try again in a few minutes."); return; }
+    openTVPlayer({ id: match.id, name: "⚽ " + match.title, url, proxy: url.startsWith("http://") });
+  } catch (e) {
+    alert("Could not load stream: " + e.message);
+  } finally {
+    card.classList.remove("match-loading");
+  }
+}
+
 /* ===== Tab Switching ===== */
 function setView(cat) {
   currentCat = cat;
   const isTV      = cat === "tv";
   const isCartoon = cat === "cartoon";
-  grid.style.display          = (!isTV && !isCartoon) ? "" : "none";
-  tvGrid.style.display        = isTV ? "grid" : "none";
-  cartoonGrid.style.display   = isCartoon ? "grid" : "none";
-  emptyState.style.display    = "none";
-  searchInput.placeholder     = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : "Search stations...";
-  if (isTV)         renderTV();
+  const isSports  = cat === "sports";
+  grid.style.display        = (!isTV && !isCartoon && !isSports) ? "" : "none";
+  tvGrid.style.display      = isTV ? "grid" : "none";
+  cartoonGrid.style.display = isCartoon ? "grid" : "none";
+  sportsGrid.style.display  = isSports ? "block" : "none";
+  emptyState.style.display  = "none";
+  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : "Search stations...";
+  if (isTV)           renderTV();
   else if (isCartoon) renderCartoons();
-  else              renderStations();
+  else if (isSports)  renderSports();
+  else                renderStations();
 }
 
 tabsEl.addEventListener("click", e => {
