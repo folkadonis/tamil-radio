@@ -46,8 +46,8 @@
 
 /* ===== Reset & Base ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+html{font-size:16px;overflow-x:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;position:relative;width:100%}
 
 /* ===== Night vignette (static) ===== */
 .bg-blobs{position:fixed;inset:0;z-index:0;pointer-events:none;background:
@@ -82,10 +82,9 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .search-bar input::placeholder{color:var(--text-dim)}
 
 /* ===== Tab Bar ===== */
-.tabs{display:flex;gap:6px;margin-bottom:24px;width:100%;max-width:100%;overflow-x:scroll;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding:2px 0 6px;touch-action:pan-x;overscroll-behavior-x:contain}
+.tabs{display:block;white-space:nowrap;margin-bottom:24px;width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 12px 6px 0;touch-action:pan-x;overscroll-behavior-x:contain;cursor:grab}
 .tabs::-webkit-scrollbar{display:none;width:0;height:0}
-.tabs::after{content:"";flex:0 0 12px}
-.tab{flex:0 0 auto;touch-action:pan-x;padding:8px 17px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text-dim);font-family:var(--font);font-size:.83rem;font-weight:500;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:color .2s,background .2s,border-color .2s}
+.tab{display:inline-block;vertical-align:middle;margin-right:6px;touch-action:pan-x;padding:8px 17px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text-dim);font-family:var(--font);font-size:.83rem;font-weight:500;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:color .2s,background .2s,border-color .2s}
 .tab:hover{color:var(--text);border-color:var(--border-strong)}
 .tab.active{background:var(--brass);color:var(--brass-ink);border-color:var(--brass);font-weight:600}
 

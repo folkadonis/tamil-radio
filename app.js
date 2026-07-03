@@ -873,6 +873,50 @@ tabsEl.addEventListener("click", e => {
   setView(tab.dataset.cat);
 });
 
+/* Tab strip drag-scroll — manual fallback for iOS Safari where native
+   horizontal overflow scroll can fail to engage over buttons */
+(function () {
+  let startX = 0, startScroll = 0, active = false, moved = false;
+
+  tabsEl.addEventListener("touchstart", e => {
+    active = true; moved = false;
+    startX = e.touches[0].clientX;
+    startScroll = tabsEl.scrollLeft;
+  }, { passive: true });
+
+  tabsEl.addEventListener("touchmove", e => {
+    if (!active) return;
+    const dx = e.touches[0].clientX - startX;
+    if (!moved && Math.abs(dx) > 6) moved = true;
+    if (moved) {
+      tabsEl.scrollLeft = startScroll - dx;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  tabsEl.addEventListener("touchend", () => { active = false; }, { passive: true });
+
+  /* Desktop: mouse drag + vertical wheel scrolls the strip too */
+  tabsEl.addEventListener("mousedown", e => {
+    active = true; moved = false;
+    startX = e.clientX;
+    startScroll = tabsEl.scrollLeft;
+  });
+  window.addEventListener("mousemove", e => {
+    if (!active) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 6) moved = true;
+    if (moved) tabsEl.scrollLeft = startScroll - dx;
+  });
+  window.addEventListener("mouseup", () => { active = false; });
+  tabsEl.addEventListener("wheel", e => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      tabsEl.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
+
 /* ===== Station Selection ===== */
 function selectStation(station) {
   const isSame = currentStation && currentStation.id === station.id;
