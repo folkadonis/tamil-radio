@@ -596,7 +596,7 @@ cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) clo
 
 /* ===== Sports ===== */
 const sportsGrid = document.getElementById("sportsGrid");
-let sportsCache = null, sportsCacheTime = 0;
+let sportsCache = null, sportsCacheTime = 0, sportsAutoRefresh = null;
 
 async function fetchSportsMatches() {
   if (sportsCache && Date.now() - sportsCacheTime < 5 * 60 * 1000) return sportsCache;
@@ -693,18 +693,10 @@ function matchCards(matches) {
   }).join("");
 }
 
-function renderSports() {
-  sportsGrid.innerHTML = `
-    <div class="sports-header">
-      <span class="sports-title">⚽ Live Matches</span>
-      <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
-    </div>
-    <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
-  document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
-    sportsCache = null; sportsCacheTime = 0; renderSports();
-  });
+function refreshSportsMatches() {
   fetchSportsMatches().then(allMatches => {
     const el = document.getElementById("sportsMatches");
+    if (!el) return;
     if (!allMatches.length) { el.innerHTML = `<div class="sports-empty">No matches found.</div>`; return; }
 
     const todayStr = new Date().toISOString().split("T")[0];
@@ -734,9 +726,9 @@ function renderSports() {
     let html = "";
     [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([dateKey, matches]) => {
       let pillClass, pillLabel;
-      if (dateKey === todayStr)     { pillClass = "pill-today";     pillLabel = "Live Today"; }
+      if (dateKey === todayStr)          { pillClass = "pill-today";     pillLabel = "Live Today"; }
       else if (dateKey === yesterdayStr) { pillClass = "pill-yesterday"; pillLabel = "Yesterday"; }
-      else                          { pillClass = "pill-upcoming";  pillLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-GB", { weekday:"long" }); }
+      else                               { pillClass = "pill-upcoming";  pillLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-GB", { weekday:"long" }); }
       const dateLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
       html += `<div class="sports-day-group">
         <div class="sports-day-label">
@@ -757,10 +749,40 @@ function renderSports() {
         if (match && serverUrl) loadMatchStream(match, serverUrl, btn);
       });
     });
+
+    const tsEl = document.getElementById("sportsLastUpdated");
+    if (tsEl) tsEl.textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
   }).catch(() => {
     const el = document.getElementById("sportsMatches");
-    if (el) el.innerHTML = `<div class="sports-empty">Failed to load matches. Check your connection.</div>`;
+    if (el && el.querySelector(".sports-loading")) {
+      el.innerHTML = `<div class="sports-empty">Failed to load matches. Check your connection.</div>`;
+    }
   });
+}
+
+function renderSports() {
+  if (sportsAutoRefresh) { clearInterval(sportsAutoRefresh); sportsAutoRefresh = null; }
+  sportsGrid.innerHTML = `
+    <div class="sports-header">
+      <span class="sports-title">⚽ Live Matches</span>
+      <div class="sports-header-right">
+        <span class="sports-last-updated" id="sportsLastUpdated"></span>
+        <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
+  document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
+    sportsCache = null; sportsCacheTime = 0;
+    document.getElementById("sportsMatches").innerHTML = `<div class="sports-loading"><span class="match-spin"></span>Loading matches…</div>`;
+    const tsEl = document.getElementById("sportsLastUpdated");
+    if (tsEl) tsEl.textContent = "";
+    refreshSportsMatches();
+  });
+  refreshSportsMatches();
+  sportsAutoRefresh = setInterval(() => {
+    sportsCache = null; sportsCacheTime = 0;
+    refreshSportsMatches();
+  }, 2 * 60 * 1000);
 }
 
 async function resolveStreamFromServer(serverUrl) {
@@ -797,6 +819,7 @@ async function loadMatchStream(match, serverUrl, btn) {
 
 /* ===== Tab Switching ===== */
 function setView(cat) {
+  if (cat !== "sports" && sportsAutoRefresh) { clearInterval(sportsAutoRefresh); sportsAutoRefresh = null; }
   currentCat = cat;
   const isTV      = cat === "tv";
   const isCartoon = cat === "cartoon";

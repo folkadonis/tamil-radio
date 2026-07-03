@@ -226,8 +226,10 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 @media(max-width:640px){.community-btn span,.community-btn svg+*{display:none}.community-btn{padding:8px}.community-panel{height:80vh;border-radius:20px 20px 0 0}}
 /* ===== Sports Tab ===== */
 #sportsGrid{padding-bottom:20px}
-.sports-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sports-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px}
 .sports-title{font-size:1rem;font-weight:700;color:var(--text)}
+.sports-header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sports-last-updated{font-size:.65rem;color:var(--text-dim);font-variant-numeric:tabular-nums}
 .sports-refresh-btn{background:none;border:1px solid rgba(255,255,255,.12);color:var(--text-dim);padding:5px 14px;border-radius:999px;font-size:.75rem;cursor:pointer;transition:all .2s;font-family:inherit}
 .sports-refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
 .sports-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:48px 0;color:var(--text-dim);font-size:.9rem}
