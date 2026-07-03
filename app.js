@@ -926,7 +926,8 @@ function renderSports() {
 
 async function resolveStreamFromServer(serverUrl) {
   const proxy = CORS_PROXY + "/?url=";
-  const html1 = await fetch(proxy + encodeURIComponent(serverUrl)).then(r => r.text());
+  const fetchHtml = u => fetch(proxy + encodeURIComponent(u)).then(r => r.text());
+
   function extractM3u8(html) {
     const urls = [];
     for (const hit of html.matchAll(/(?:\?x=|\?url=)(https?[^"'<>&\s\\]+\.m3u8[^"'<>&\s\\]*)/gi)) {
@@ -935,12 +936,36 @@ async function resolveStreamFromServer(serverUrl) {
     }
     return urls.find(u => !u.includes("cloudflarestream.com")) || urls[0] || null;
   }
-  const direct = extractM3u8(html1);
-  if (direct) return direct;
-  const livez = html1.match(/https?:\/\/livezwc\d+\.blogspot\.com\/p\/[^\s"'<>]*/);
-  if (!livez) return null;
-  const html2 = await fetch(proxy + encodeURIComponent(livez[0])).then(r => r.text());
-  return extractM3u8(html2);
+  function findLivez(html) {
+    const m = html.match(/https?:\/\/livezwc\d+\.blogspot\.com\/p\/[^\s"'<>]*/);
+    return m ? m[0].replace(/&amp;/g, "&") : null;
+  }
+  // Resolve an m3u8 from one page: direct embed, or via a livez embed it links to.
+  async function fromPage(html) {
+    const direct = extractM3u8(html);
+    if (direct) return direct;
+    const livez = findLivez(html);
+    if (livez) return extractM3u8(await fetchHtml(livez));
+    return null;
+  }
+
+  const html1 = await fetchHtml(serverUrl);
+  let url = await fromPage(html1);
+  if (url) return url;
+
+  // goatsports now puts the player on a separate /p/ "live" page that the match
+  // page links to (its title is disguised as an article). Follow those links.
+  const BOILERPLATE = /(about-us|contact-us|dmca|privacy-policy|terms)/i;
+  const seen = new Set();
+  for (const m of html1.matchAll(/https?:\/\/www\.goatsports\.xyz\/p\/[^\s"'<>]+\.html/gi)) {
+    const page = m[0];
+    if (seen.has(page) || BOILERPLATE.test(page)) continue;
+    seen.add(page);
+    url = await fromPage(await fetchHtml(page));
+    if (url) return url;
+    if (seen.size >= 3) break;
+  }
+  return null;
 }
 
 async function loadMatchStream(match, serverUrl, btn) {
