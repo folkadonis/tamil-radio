@@ -679,11 +679,13 @@ function refreshFightEvents() {
             : st === "ended"
             ? `<span class="match-status ended">ENDED</span>`
             : `<span class="match-status upcoming">UPCOMING</span>`;
+          const chIds = e.league === "UFC" ? ["cb3", "cb2"] : ["cb2", "cb5"];
           const watch = `<div class="fight-watch">
-                 <span class="fight-watch-label">Fight channels (24/7):</span>
-                 ${COMBAT_CHANNELS.map(c =>
-                   `<button class="match-srv-btn" data-fw="${c.id}"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M8 5v14l11-7z"/></svg> ${c.name}</button>`
-                 ).join("")}
+                 <span class="fight-watch-label">Watch on:</span>
+                 ${chIds.map(id => {
+                   const c = COMBAT_CHANNELS.find(x => x.id === id);
+                   return `<button class="match-srv-btn" data-fw="${c.id}"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M8 5v14l11-7z"/></svg> ${c.name}</button>`;
+                 }).join("")}
                </div>`;
           return `<div class="fight-card">
             <div class="fight-main">
