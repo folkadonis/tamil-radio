@@ -601,12 +601,18 @@ let sportsCache = null, sportsCacheTime = 0;
 async function fetchSportsMatches() {
   if (sportsCache && Date.now() - sportsCacheTime < 5 * 60 * 1000) return sportsCache;
   const base = CORS_PROXY + "/?url=";
-  const [todayHtml, upcomingHtml] = await Promise.all([
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const yestDate = new Date(now); yestDate.setDate(yestDate.getDate() - 1);
+  const yesterdayStr = yestDate.toISOString().split("T")[0];
+
+  const [yesterdayHtml, todayHtml, upcomingHtml] = await Promise.all([
+    fetch(base + encodeURIComponent("https://www.epicsports.in/?view=yest")).then(r => r.text()),
     fetch(base + encodeURIComponent("https://www.epicsports.in/")).then(r => r.text()),
     fetch(base + encodeURIComponent("https://www.epicsports.in/?view=tomo")).then(r => r.text())
   ]);
 
-  function parseMatches(html) {
+  function parseMatches(html, fallbackDate) {
     const doc = new DOMParser().parseFromString(html, "text/html");
     const map = new Map();
     doc.querySelectorAll(".match-event").forEach(el => {
@@ -615,15 +621,16 @@ async function fetchSportsMatches() {
       if (!title) return;
       if (!map.has(title)) {
         map.set(title, {
-          id:      title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          id:       title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
           title,
-          t1:      { name: el.querySelector(".first-team .team-name")?.textContent.trim() || "", logo: el.querySelector(".first-team .team-logo img")?.getAttribute("src") || "" },
-          t2:      { name: el.querySelector(".left-team .team-name")?.textContent.trim()  || "", logo: el.querySelector(".left-team .team-logo img")?.getAttribute("src")  || "" },
-          time:    el.querySelector("#match-hour")?.textContent.trim() || "",
-          comp:    el.querySelector(".match-info")?.textContent.trim() || "",
-          startAt: el.querySelector("[data-start]")?.getAttribute("data-start")     || "",
-          gameEnds:el.querySelector("[data-gameends]")?.getAttribute("data-gameends") || "",
-          servers: []
+          t1:       { name: el.querySelector(".first-team .team-name")?.textContent.trim() || "", logo: el.querySelector(".first-team .team-logo img")?.getAttribute("src") || "" },
+          t2:       { name: el.querySelector(".left-team .team-name")?.textContent.trim()  || "", logo: el.querySelector(".left-team .team-logo img")?.getAttribute("src")  || "" },
+          time:     el.querySelector("#match-hour")?.textContent.trim() || "",
+          comp:     el.querySelector(".match-info")?.textContent.trim() || "",
+          startAt:  el.querySelector("[data-start]")?.getAttribute("data-start")      || "",
+          gameEnds: el.querySelector("[data-gameends]")?.getAttribute("data-gameends") || "",
+          tabDate:  fallbackDate,
+          servers:  []
         });
       }
       const href = link?.getAttribute("href") || "";
@@ -635,7 +642,11 @@ async function fetchSportsMatches() {
     return [...map.values()];
   }
 
-  sportsCache = { today: parseMatches(todayHtml), upcoming: parseMatches(upcomingHtml) };
+  sportsCache = [
+    ...parseMatches(yesterdayHtml, yesterdayStr),
+    ...parseMatches(todayHtml,     todayStr),
+    ...parseMatches(upcomingHtml,  null)
+  ];
   sportsCacheTime = Date.now();
   return sportsCache;
 }
@@ -692,34 +703,51 @@ function renderSports() {
   document.getElementById("sportsRefreshBtn").addEventListener("click", () => {
     sportsCache = null; sportsCacheTime = 0; renderSports();
   });
-  fetchSportsMatches().then(({ today, upcoming }) => {
+  fetchSportsMatches().then(allMatches => {
     const el = document.getElementById("sportsMatches");
-    if (!today.length && !upcoming.length) {
-      el.innerHTML = `<div class="sports-empty">No matches scheduled today.</div>`;
-      return;
+    if (!allMatches.length) { el.innerHTML = `<div class="sports-empty">No matches found.</div>`; return; }
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const yestDate = new Date(); yestDate.setDate(yestDate.getDate() - 1);
+    const yesterdayStr = yestDate.toISOString().split("T")[0];
+
+    function getDateKey(m) {
+      if (m.startAt) {
+        const iso = m.startAt.match(/(\d{4}-\d{2}-\d{2})/);
+        if (iso) return iso[1];
+        const ts = Number(m.startAt);
+        if (!isNaN(ts) && ts > 0) {
+          const ms = ts > 9999999999 ? ts : ts * 1000;
+          return new Date(ms).toISOString().split("T")[0];
+        }
+      }
+      return m.tabDate || todayStr;
     }
-    const allMatches = [...today, ...upcoming];
-    const todayDate  = new Date().toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+
+    const groups = new Map();
+    allMatches.forEach(m => {
+      const key = getDateKey(m);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(m);
+    });
+
     let html = "";
-    if (today.length) {
+    [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([dateKey, matches]) => {
+      let pillClass, pillLabel;
+      if (dateKey === todayStr)     { pillClass = "pill-today";     pillLabel = "Live Today"; }
+      else if (dateKey === yesterdayStr) { pillClass = "pill-yesterday"; pillLabel = "Yesterday"; }
+      else                          { pillClass = "pill-upcoming";  pillLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-GB", { weekday:"long" }); }
+      const dateLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
       html += `<div class="sports-day-group">
         <div class="sports-day-label">
-          <span class="sports-day-pill pill-today">Live Today</span>
-          <span class="sports-day-date">${todayDate}</span>
-          <span class="sports-day-count">${today.length} match${today.length > 1 ? "es" : ""}</span>
+          <span class="sports-day-pill ${pillClass}">${pillLabel}</span>
+          <span class="sports-day-date">${dateLabel}</span>
+          <span class="sports-day-count">${matches.length} match${matches.length > 1 ? "es" : ""}</span>
         </div>
-        ${matchCards(today)}
+        ${matchCards(matches)}
       </div>`;
-    }
-    if (upcoming.length) {
-      html += `<div class="sports-day-group">
-        <div class="sports-day-label">
-          <span class="sports-day-pill pill-upcoming">Upcoming</span>
-          <span class="sports-day-count">${upcoming.length} match${upcoming.length > 1 ? "es" : ""}</span>
-        </div>
-        ${matchCards(upcoming)}
-      </div>`;
-    }
+    });
+
     el.innerHTML = html;
     el.querySelectorAll(".match-srv-btn").forEach(btn => {
       btn.addEventListener("click", () => {
