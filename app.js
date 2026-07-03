@@ -110,6 +110,8 @@ const TV_CHANNELS = [
   { id:"tv94", name:"Turkmenistan Sport",logo:"https://i.imgur.com/n6vITLu.png",                                                                                                               url:"https://alpha.tv.online.tm/hls/ch004.m3u8", proxy:true },
   { id:"tv95", name:"BTV National",     logo:"https://i.imgur.com/5OE2FDt.png",                                                                                                                url:"https://owrcovcrpy.gpcdn.net/bpk-tv/1709/output/1709.m3u8" },
   { id:"tv96", name:"Somoy TV",         logo:"https://i.imgur.com/i54AQic.png",                                                                                                                url:"https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8" },
+  /* EpicSports — Live Football Streams */
+  { id:"epic1", name:"⚽ EpicSports — Football Live", logo:"https://i.imgur.com/BURPHzI.png", type:"external", url:"https://www.epicsports.in/", subtitle:"FIFA WC 2026 · Live Match Streams" },
 ];
 
 /* ===== Radio Station Data ===== */
@@ -442,10 +444,14 @@ function renderTV() {
       </div>
       <div class="tv-info">
         <p class="tv-name">${c.name}</p>
-        <div class="station-live"><span class="live-dot"></span> LIVE</div>
+        ${c.type === "external"
+          ? `<div class="station-live" style="color:#f97316;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f97316;margin-right:4px;"></span> OPEN SITE</div>`
+          : `<div class="station-live"><span class="live-dot"></span> LIVE</div>`}
       </div>
       <div class="tv-play-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
+        ${c.type === "external"
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`
+          : `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>`}
       </div>
     </div>`).join("");
 
@@ -468,6 +474,10 @@ function resolveStreamUrl(url, forceProxy) {
 }
 
 function openTVPlayer(channel) {
+  if (channel.type === "external") {
+    window.open(channel.url, "_blank", "noopener,noreferrer");
+    return;
+  }
   currentTV = channel;
   tvModalName.textContent = channel.name;
   tvModal.classList.add("open");
