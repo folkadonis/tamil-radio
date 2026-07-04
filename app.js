@@ -953,17 +953,22 @@ async function resolveStreamFromServer(serverUrl) {
   let url = await fromPage(html1);
   if (url) return url;
 
-  // goatsports now puts the player on a separate /p/ "live" page that the match
-  // page links to (its title is disguised as an article). Follow those links.
-  const BOILERPLATE = /(about-us|contact-us|dmca|privacy-policy|terms)/i;
+  // The provider puts the player on a separate /p/ "live" page linked from the
+  // match page (title disguised as an article). The provider domain migrates
+  // over time (goatsports.xyz -> epic-sports.live -> ...), so follow /p/ links
+  // on the SAME host as this server rather than a hardcoded domain.
+  let origin = "";
+  try { origin = new URL(serverUrl).origin; } catch (_) {}
+  const BOILERPLATE = /(about-us|contact-us|dmca|privacy-policy|terms|how-to)/i;
   const seen = new Set();
-  for (const m of html1.matchAll(/https?:\/\/www\.goatsports\.xyz\/p\/[^\s"'<>]+\.html/gi)) {
+  for (const m of html1.matchAll(/https?:\/\/[^\s"'<>]+\/p\/[^\s"'<>]+\.html/gi)) {
     const page = m[0];
     if (seen.has(page) || BOILERPLATE.test(page)) continue;
+    if (origin && !page.startsWith(origin)) continue;
     seen.add(page);
     url = await fromPage(await fetchHtml(page));
     if (url) return url;
-    if (seen.size >= 3) break;
+    if (seen.size >= 4) break;
   }
   return null;
 }
@@ -971,7 +976,16 @@ async function resolveStreamFromServer(serverUrl) {
 async function loadMatchStream(match, serverUrl, btn) {
   btn.classList.add("srv-loading");
   try {
-    const url = await resolveStreamFromServer(serverUrl);
+    // Try the clicked server first, then fall back to the match's other
+    // servers/mirrors — providers 404 individual matches while a mirror on
+    // another domain still has the stream.
+    const tried = new Set();
+    const order = [serverUrl, ...(match.servers || [])].filter(s => s && !tried.has(s) && tried.add(s));
+    let url = null;
+    for (const srv of order) {
+      try { url = await resolveStreamFromServer(srv); } catch (_) {}
+      if (url) break;
+    }
     if (!url) { alert("Stream not available right now. Try again in a few minutes."); return; }
     openTVPlayer({ id: match.id, name: "⚽ " + match.title, url, proxy: url.startsWith("http://") });
   } catch (e) {
