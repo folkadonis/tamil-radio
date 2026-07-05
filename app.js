@@ -360,7 +360,7 @@ const animeGrid     = document.getElementById("animeGrid");
 const animeModal    = document.getElementById("animeModal");
 const animeModalName = document.getElementById("animeModalName");
 const animeModalClose = document.getElementById("animeModalClose");
-const animeIframe   = document.getElementById("animeIframe");
+const animeVideo    = document.getElementById("animeVideo");
 
 /* ===== State ===== */
 let currentStation = null;
@@ -600,23 +600,22 @@ cartoonModalClose.addEventListener("click", closeCartoonPlayer);
 cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) closeCartoonPlayer(); });
 
 /* ===== Anime ===== */
-/* Streamed via aniwave-family site: episode list + player are same-origin
-   inside the iframe, so the site's own player handles Sub/Dub + servers. */
-const ANIME_SITE = "https://aniwaves.ru";
+/* Streamed football-style: direct MP4 files from the Internet Archive
+   (open CORS + range), played in the app's own native <video> — no embed.
+   archiveItems is a list so more episode packs can be appended over time. */
 const ANIME = [
   {
     id: "one-piece",
     title: "One Piece",
-    subtitle: "Complete Series · English Sub & Dub · HD",
-    cover: "https://static.aniwaves.ru/resources/thumbnails/200x280/100/088a34a9ded75b1bca122ef1fa4e283a.jpg",
-    slug: "one-piece-81553",
-    dataId: "81553",
-    tag: "1168 Episodes"
+    subtitle: "English Dub · numbered episodes · more coming",
+    cover: "https://archive.org/services/img/one_piece_4Kids_Full_Series",
+    archiveItems: ["one_piece_4Kids_Full_Series"],
+    tag: "103 Episodes"
   }
 ];
 
-let animeEpCache = {};   // dataId -> [epNums]
-let animeCurrent = null; // { show, ep }
+let animeEpCache = {};    // show.id -> [ {num, title, url} ]
+let animeCurrent = null;  // { show, eps, idx }
 
 function renderAnime() {
   const query = searchInput.value.toLowerCase().trim();
@@ -629,7 +628,7 @@ function renderAnime() {
           <div class="cartoon-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M8 5v14l11-7z"/></svg></div>
         </div>
         <span class="cartoon-ep-tag">${a.tag}</span>
-        <span class="cartoon-src-badge anime-src">SUB · DUB</span>
+        <span class="cartoon-src-badge anime-src">HD · ENG</span>
       </div>
       <div class="cartoon-meta">
         <p class="cartoon-title">${a.title}</p>
@@ -645,59 +644,70 @@ function renderAnime() {
 }
 
 async function fetchAnimeEpisodes(show) {
-  if (animeEpCache[show.dataId]) return animeEpCache[show.dataId];
-  const url = CORS_PROXY + "/?url=" + encodeURIComponent(`${ANIME_SITE}/ajax/episode/list/${show.dataId}`);
-  const data = await fetch(url).then(r => r.json());
-  const html = data.result || "";
-  const nums = [...html.matchAll(/data-num=["']?([\d.]+)/g)]
-    .map(m => Number(m[1]))
-    .filter(n => Number.isInteger(n));
-  const eps = [...new Set(nums)].sort((a, b) => a - b);
-  animeEpCache[show.dataId] = eps;
+  if (animeEpCache[show.id]) return animeEpCache[show.id];
+  const collected = [];
+  for (const itemId of show.archiveItems) {
+    try {
+      const data = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent("https://archive.org/metadata/" + itemId)).then(r => r.json());
+      const base = "https://archive.org/download/" + itemId + "/";
+      for (const f of (data.files || [])) {
+        if (!/\.(mp4|m4v)$/i.test(f.name) || Number(f.size || 0) < 8e6) continue;
+        const fname = f.name.split("/").pop();
+        const numM  = fname.match(/(\d{1,4})/);
+        const sort  = numM ? Number(numM[1]) : 99999;
+        const title = fname.replace(/\.(mp4|m4v)$/i, "").replace(/^\d{1,4}[\s._-]*/, "").replace(/[_.]+/g, " ").replace(/\s+/g, " ").trim();
+        collected.push({ sort, title, url: base + f.name.split("/").map(encodeURIComponent).join("/") });
+      }
+    } catch (_) {}
+  }
+  collected.sort((a, b) => a.sort - b.sort);
+  const eps = collected.map((e, i) => ({ num: i + 1, title: e.title || ("Episode " + (i + 1)), url: e.url }));
+  animeEpCache[show.id] = eps;
   return eps;
 }
 
-function playAnimeEpisode(ep) {
+function playAnimeEpisode(idx) {
   if (!animeCurrent) return;
-  animeCurrent.ep = ep;
-  animeIframe.src = `${ANIME_SITE}/watch/${animeCurrent.show.slug}/episode/${ep}`;
-  document.getElementById("animeEpCurrent").textContent = "Episode " + ep;
-  animeGrid.ownerDocument.querySelectorAll("#animeEpStrip .anime-ep-btn").forEach(b =>
-    b.classList.toggle("active", Number(b.dataset.ep) === ep));
+  const ep = animeCurrent.eps[idx];
+  if (!ep) return;
+  animeCurrent.idx = idx;
+  animeVideo.src = ep.url;
+  animeVideo.play().catch(() => {});
+  document.getElementById("animeEpCurrent").textContent = "Ep " + ep.num + " · " + ep.title;
+  document.querySelectorAll("#animeEpStrip .anime-ep-btn").forEach(b =>
+    b.classList.toggle("active", Number(b.dataset.idx) === idx));
 }
 
 function renderAnimeRange(eps, startIdx) {
   const strip = document.getElementById("animeEpStrip");
-  const slice = eps.slice(startIdx, startIdx + 100);
-  strip.innerHTML = slice.map(n =>
-    `<button class="anime-ep-btn${animeCurrent && n === animeCurrent.ep ? " active" : ""}" data-ep="${n}">${n}</button>`).join("");
+  const slice = eps.slice(startIdx, startIdx + 50);
+  strip.innerHTML = slice.map((e, i) => {
+    const idx = startIdx + i;
+    return `<button class="anime-ep-btn${animeCurrent && idx === animeCurrent.idx ? " active" : ""}" data-idx="${idx}" title="${e.title.replace(/"/g, "&quot;")}">${e.num}</button>`;
+  }).join("");
   strip.querySelectorAll(".anime-ep-btn").forEach(b =>
-    b.addEventListener("click", () => playAnimeEpisode(Number(b.dataset.ep))));
+    b.addEventListener("click", () => playAnimeEpisode(Number(b.dataset.idx))));
 }
 
 async function openAnimePlayer(show) {
-  animeCurrent = { show, ep: 1 };
   animeModalName.textContent = show.title;
   animeModal.classList.add("open");
   document.body.style.overflow = "hidden";
   document.getElementById("animeEpCurrent").textContent = "Loading episodes…";
   document.getElementById("animeRangeStrip").innerHTML = "";
   document.getElementById("animeEpStrip").innerHTML = "";
-  playAnimeEpisode(1);
+  animeVideo.removeAttribute("src");
 
-  let eps;
-  try {
-    eps = await fetchAnimeEpisodes(show);
-  } catch (_) {
-    eps = Array.from({ length: 1168 }, (_, i) => i + 1); // fallback range
-  }
-  if (!eps.length) eps = Array.from({ length: 1168 }, (_, i) => i + 1);
+  let eps = [];
+  try { eps = await fetchAnimeEpisodes(show); } catch (_) {}
+  if (!eps.length) { document.getElementById("animeEpCurrent").textContent = "Couldn't load episodes. Try again."; return; }
+  animeCurrent = { show, eps, idx: 0 };
 
-  // Range chips (hundreds) for 1000+ episodes
+  // Range chips (50 per chunk)
   const rangeStrip = document.getElementById("animeRangeStrip");
   const chips = [];
-  for (let i = 0; i < eps.length; i += 100) {
-    const a = eps[i], b = eps[Math.min(i + 99, eps.length - 1)];
+  for (let i = 0; i < eps.length; i += 50) {
+    const a = eps[i].num, b = eps[Math.min(i + 49, eps.length - 1)].num;
     chips.push(`<button class="anime-range-btn${i === 0 ? " active" : ""}" data-start="${i}">${a}–${b}</button>`);
   }
   rangeStrip.innerHTML = chips.join("");
@@ -707,14 +717,17 @@ async function openAnimePlayer(show) {
       btn.classList.add("active");
       renderAnimeRange(eps, Number(btn.dataset.start));
     }));
+
   renderAnimeRange(eps, 0);
-  document.getElementById("animeEpCurrent").textContent = "Episode 1";
+  playAnimeEpisode(0);
 }
 
 function closeAnimePlayer() {
   animeModal.classList.remove("open");
   document.body.style.overflow = "";
-  animeIframe.src = "";
+  animeVideo.pause();
+  animeVideo.removeAttribute("src");
+  animeVideo.load();
   animeCurrent = null;
 }
 
