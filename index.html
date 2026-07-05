@@ -71,6 +71,7 @@
       <button class="tab" data-cat="india">🇮🇳 Chennai</button>
       <button class="tab" data-cat="tv">📺 Live TV</button>
       <button class="tab" data-cat="cartoon">🎬 Cartoon</button>
+      <button class="tab" data-cat="anime">🏴‍☠️ Anime</button>
       <button class="tab" data-cat="sports">⚽ Sports</button>
     </div>
 
@@ -82,6 +83,9 @@
 
     <!-- Cartoon Grid -->
     <div class="cartoon-grid" id="cartoonGrid" style="display:none;"></div>
+
+    <!-- Anime Grid -->
+    <div class="cartoon-grid" id="animeGrid" style="display:none;"></div>
 
     <!-- Sports Grid -->
     <div id="sportsGrid" style="display:none;"></div>
@@ -151,6 +155,29 @@
         </button>
       </div>
       <iframe id="cartoonIframe" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+  </div>
+
+  <!-- Anime Player Modal -->
+  <div class="anime-modal" id="animeModal">
+    <div class="anime-modal-inner">
+      <div class="anime-modal-top">
+        <div class="tv-modal-info">
+          <span class="anime-badge">🏴‍☠️ ANIME</span>
+          <span class="tv-modal-name" id="animeModalName"></span>
+        </div>
+        <button class="tv-modal-close" id="animeModalClose" aria-label="Close player">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="anime-player-wrap">
+        <iframe id="animeIframe" allowfullscreen allow="autoplay; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="no-referrer"></iframe>
+      </div>
+      <div class="anime-ep-bar">
+        <div class="anime-ep-current" id="animeEpCurrent">Episode 1</div>
+        <div class="anime-range-strip" id="animeRangeStrip"></div>
+        <div class="anime-ep-strip" id="animeEpStrip"></div>
+      </div>
     </div>
   </div>
 

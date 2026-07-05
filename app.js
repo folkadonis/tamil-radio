@@ -356,6 +356,11 @@ const cartoonModal  = document.getElementById("cartoonModal");
 const cartoonModalName = document.getElementById("cartoonModalName");
 const cartoonModalClose = document.getElementById("cartoonModalClose");
 const cartoonIframe = document.getElementById("cartoonIframe");
+const animeGrid     = document.getElementById("animeGrid");
+const animeModal    = document.getElementById("animeModal");
+const animeModalName = document.getElementById("animeModalName");
+const animeModalClose = document.getElementById("animeModalClose");
+const animeIframe   = document.getElementById("animeIframe");
 
 /* ===== State ===== */
 let currentStation = null;
@@ -593,6 +598,128 @@ function closeCartoonPlayer() {
 
 cartoonModalClose.addEventListener("click", closeCartoonPlayer);
 cartoonModal.addEventListener("click", e => { if (e.target === cartoonModal) closeCartoonPlayer(); });
+
+/* ===== Anime ===== */
+/* Streamed via aniwave-family site: episode list + player are same-origin
+   inside the iframe, so the site's own player handles Sub/Dub + servers. */
+const ANIME_SITE = "https://aniwaves.ru";
+const ANIME = [
+  {
+    id: "one-piece",
+    title: "One Piece",
+    subtitle: "Complete Series · English Sub & Dub · HD",
+    cover: "https://static.aniwaves.ru/resources/thumbnails/200x280/100/088a34a9ded75b1bca122ef1fa4e283a.jpg",
+    slug: "one-piece-81553",
+    dataId: "81553",
+    tag: "1168 Episodes"
+  }
+];
+
+let animeEpCache = {};   // dataId -> [epNums]
+let animeCurrent = null; // { show, ep }
+
+function renderAnime() {
+  const query = searchInput.value.toLowerCase().trim();
+  const list  = ANIME.filter(a => !query || a.title.toLowerCase().includes(query) || a.subtitle.toLowerCase().includes(query));
+  animeGrid.innerHTML = list.map(a => `
+    <div class="cartoon-card" data-aid="${a.id}">
+      <div class="cartoon-thumb">
+        <img class="cartoon-img" src="${a.cover}" alt="${a.title}" onerror="this.style.display='none'">
+        <div class="cartoon-play-overlay">
+          <div class="cartoon-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <span class="cartoon-ep-tag">${a.tag}</span>
+        <span class="cartoon-src-badge anime-src">SUB · DUB</span>
+      </div>
+      <div class="cartoon-meta">
+        <p class="cartoon-title">${a.title}</p>
+        <p class="cartoon-sub">${a.subtitle}</p>
+      </div>
+    </div>`).join("");
+  animeGrid.querySelectorAll(".cartoon-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const show = ANIME.find(a => a.id === card.dataset.aid);
+      if (show) openAnimePlayer(show);
+    });
+  });
+}
+
+async function fetchAnimeEpisodes(show) {
+  if (animeEpCache[show.dataId]) return animeEpCache[show.dataId];
+  const url = CORS_PROXY + "/?url=" + encodeURIComponent(`${ANIME_SITE}/ajax/episode/list/${show.dataId}`);
+  const data = await fetch(url).then(r => r.json());
+  const html = data.result || "";
+  const nums = [...html.matchAll(/data-num=["']?([\d.]+)/g)]
+    .map(m => Number(m[1]))
+    .filter(n => Number.isInteger(n));
+  const eps = [...new Set(nums)].sort((a, b) => a - b);
+  animeEpCache[show.dataId] = eps;
+  return eps;
+}
+
+function playAnimeEpisode(ep) {
+  if (!animeCurrent) return;
+  animeCurrent.ep = ep;
+  animeIframe.src = `${ANIME_SITE}/watch/${animeCurrent.show.slug}/episode/${ep}`;
+  document.getElementById("animeEpCurrent").textContent = "Episode " + ep;
+  animeGrid.ownerDocument.querySelectorAll("#animeEpStrip .anime-ep-btn").forEach(b =>
+    b.classList.toggle("active", Number(b.dataset.ep) === ep));
+}
+
+function renderAnimeRange(eps, startIdx) {
+  const strip = document.getElementById("animeEpStrip");
+  const slice = eps.slice(startIdx, startIdx + 100);
+  strip.innerHTML = slice.map(n =>
+    `<button class="anime-ep-btn${animeCurrent && n === animeCurrent.ep ? " active" : ""}" data-ep="${n}">${n}</button>`).join("");
+  strip.querySelectorAll(".anime-ep-btn").forEach(b =>
+    b.addEventListener("click", () => playAnimeEpisode(Number(b.dataset.ep))));
+}
+
+async function openAnimePlayer(show) {
+  animeCurrent = { show, ep: 1 };
+  animeModalName.textContent = show.title;
+  animeModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("animeEpCurrent").textContent = "Loading episodes…";
+  document.getElementById("animeRangeStrip").innerHTML = "";
+  document.getElementById("animeEpStrip").innerHTML = "";
+  playAnimeEpisode(1);
+
+  let eps;
+  try {
+    eps = await fetchAnimeEpisodes(show);
+  } catch (_) {
+    eps = Array.from({ length: 1168 }, (_, i) => i + 1); // fallback range
+  }
+  if (!eps.length) eps = Array.from({ length: 1168 }, (_, i) => i + 1);
+
+  // Range chips (hundreds) for 1000+ episodes
+  const rangeStrip = document.getElementById("animeRangeStrip");
+  const chips = [];
+  for (let i = 0; i < eps.length; i += 100) {
+    const a = eps[i], b = eps[Math.min(i + 99, eps.length - 1)];
+    chips.push(`<button class="anime-range-btn${i === 0 ? " active" : ""}" data-start="${i}">${a}–${b}</button>`);
+  }
+  rangeStrip.innerHTML = chips.join("");
+  rangeStrip.querySelectorAll(".anime-range-btn").forEach(btn =>
+    btn.addEventListener("click", () => {
+      rangeStrip.querySelectorAll(".anime-range-btn").forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+      renderAnimeRange(eps, Number(btn.dataset.start));
+    }));
+  renderAnimeRange(eps, 0);
+  document.getElementById("animeEpCurrent").textContent = "Episode 1";
+}
+
+function closeAnimePlayer() {
+  animeModal.classList.remove("open");
+  document.body.style.overflow = "";
+  animeIframe.src = "";
+  animeCurrent = null;
+}
+
+animeModalClose.addEventListener("click", closeAnimePlayer);
+animeModal.addEventListener("click", e => { if (e.target === animeModal) closeAnimePlayer(); });
 
 /* ===== Sports ===== */
 /* Combat channels — live-tested, CORS-verified 24/7 streams */
@@ -1089,15 +1216,18 @@ function setView(cat) {
   currentCat = cat;
   const isTV      = cat === "tv";
   const isCartoon = cat === "cartoon";
+  const isAnime   = cat === "anime";
   const isSports  = cat === "sports";
-  grid.style.display        = (!isTV && !isCartoon && !isSports) ? "" : "none";
+  grid.style.display        = (!isTV && !isCartoon && !isAnime && !isSports) ? "" : "none";
   tvGrid.style.display      = isTV ? "grid" : "none";
   cartoonGrid.style.display = isCartoon ? "grid" : "none";
+  animeGrid.style.display   = isAnime ? "grid" : "none";
   sportsGrid.style.display  = isSports ? "block" : "none";
   emptyState.style.display  = "none";
-  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : "Search stations...";
+  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : isAnime ? "Search anime..." : "Search stations...";
   if (isTV)           renderTV();
   else if (isCartoon) renderCartoons();
+  else if (isAnime)   renderAnime();
   else if (isSports)  renderSports();
   else                renderStations();
 }
@@ -1265,6 +1395,8 @@ audio.volume = 0.8;
 
 searchInput.addEventListener("input", () => {
   if (currentCat === "tv") renderTV();
+  else if (currentCat === "cartoon") renderCartoons();
+  else if (currentCat === "anime") renderAnime();
   else renderStations();
 });
 
@@ -1277,7 +1409,7 @@ playerFreq.addEventListener("click", () => {
 
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
-  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); }
+  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); closeCartoonPlayer(); closeAnimePlayer(); }
   if (e.code === "Space" && currentCat !== "tv") { e.preventDefault(); togglePlay(); }
   if (e.code === "ArrowRight") nextBtn.click();
   if (e.code === "ArrowLeft")  prevBtn.click();
