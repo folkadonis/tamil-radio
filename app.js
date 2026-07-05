@@ -876,6 +876,91 @@ function refreshSportsMatches() {
   });
 }
 
+/* ── Full World Cup fixture schedule (TheSportsDB, beyond epicsports' 3-day window) ── */
+const WC_LEAGUE = 4429, WC_SEASON = 2026;
+const WC_ROUNDS = [[16, "Round of 16"], [125, "Quarter-final"], [150, "Semi-final"], [200, "Final"]];
+let wcCache = null, wcCacheTime = 0;
+
+function teamPairKey(title) {
+  return (title || "").toLowerCase()
+    .split(/\s+vs\.?\s+|\s+v\s+/)
+    .map(p => p.replace(/[^a-z0-9]/g, ""))
+    .filter(Boolean).sort().join("|");
+}
+
+async function fetchWorldCupFixtures() {
+  if (wcCache && Date.now() - wcCacheTime < 30 * 60 * 1000) return wcCache;
+  const results = await Promise.allSettled(WC_ROUNDS.map(([r, label]) =>
+    fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsround.php?id=${WC_LEAGUE}&r=${r}&s=${WC_SEASON}`)
+      .then(x => x.json())
+      .then(d => (d.events || []).map(e => ({
+        id:    "wc" + e.idEvent,
+        title: e.strEvent || "",
+        home:  e.strHomeTeam || (e.strEvent || "").split(/\s+vs\.?\s+/i)[0] || "",
+        away:  e.strAwayTeam || (e.strEvent || "").split(/\s+vs\.?\s+/i)[1] || "",
+        round: label,
+        ts:    e.strTimestamp ? new Date(e.strTimestamp + "Z").getTime() : 0
+      })))
+  ));
+  const now = Date.now(), seen = new Set();
+  const events = results
+    .flatMap(r => r.status === "fulfilled" ? r.value : [])
+    .filter(e => e.title && e.ts && e.ts > now)
+    .filter(e => { const k = teamPairKey(e.title); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.ts - b.ts);
+  wcCache = events; wcCacheTime = Date.now();
+  return events;
+}
+
+function refreshWorldCupFixtures() {
+  const el = document.getElementById("wcSchedule");
+  if (!el) return;
+  fetchWorldCupFixtures().then(events => {
+    const target = document.getElementById("wcSchedule");
+    if (!target) return;
+    // Drop fixtures epicsports already lists (those are streamable and shown above).
+    const shown = new Set((Array.isArray(sportsCache) ? sportsCache : []).map(m => teamPairKey(m.title)));
+    const list = events.filter(e => !shown.has(teamPairKey(e.title)));
+    if (!list.length) { target.innerHTML = ""; return; }
+
+    const istDay  = ts => new Date(ts).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
+    const istTime = ts => new Date(ts).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+
+    const groups = new Map();
+    list.forEach(e => { const k = istDay(e.ts); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+
+    let html = `
+      <div class="sports-header" style="margin-top:30px">
+        <span class="sports-title">Full Schedule</span>
+        <span class="combat-247 wc-badge">FIFA World Cup 2026</span>
+      </div>`;
+    groups.forEach((items, day) => {
+      html += `<div class="sports-day-group">
+        <div class="sports-day-label">
+          <span class="sports-day-pill pill-upcoming">Upcoming</span>
+          <span class="sports-day-date">${day}</span>
+          <span class="sports-day-count">${items.length} match${items.length > 1 ? "es" : ""}</span>
+        </div>
+        ${items.map(e => `<div class="fight-card">
+          <div class="fight-main">
+            <span class="fight-league fl-box">${e.round}</span>
+            <div class="fight-info">
+              <p class="fight-title">${e.home} vs ${e.away}</p>
+              <p class="fight-time">${istTime(e.ts)} IST</p>
+            </div>
+            <span class="match-status upcoming">UPCOMING</span>
+          </div>
+          <div class="fight-watch"><span class="fight-watch-label">Stream opens near kick-off</span></div>
+        </div>`).join("")}
+      </div>`;
+    });
+    target.innerHTML = html;
+  }).catch(() => {
+    const target = document.getElementById("wcSchedule");
+    if (target) target.innerHTML = "";
+  });
+}
+
 function renderSports() {
   if (sportsAutoRefresh) { clearInterval(sportsAutoRefresh); sportsAutoRefresh = null; }
   sportsGrid.innerHTML = `
@@ -901,7 +986,8 @@ function renderSports() {
         <button class="sports-refresh-btn" id="sportsRefreshBtn">↻ Refresh</button>
       </div>
     </div>
-    <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>`;
+    <div id="sportsMatches"><div class="sports-loading"><span class="match-spin"></span>Loading matches…</div></div>
+    <div id="wcSchedule"></div>`;
   sportsGrid.querySelectorAll(".combat-card").forEach(card => {
     card.addEventListener("click", () => {
       const ch = COMBAT_CHANNELS.find(c => c.id === card.dataset.cbid);
@@ -917,10 +1003,12 @@ function renderSports() {
   });
   refreshSportsMatches();
   refreshFightEvents();
+  refreshWorldCupFixtures();
   sportsAutoRefresh = setInterval(() => {
     sportsCache = null; sportsCacheTime = 0;
     refreshSportsMatches();
     refreshFightEvents();
+    refreshWorldCupFixtures();
   }, 2 * 60 * 1000);
 }
 

@@ -292,6 +292,7 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 
 /* ===== Combat Channels (Sports tab) ===== */
 .combat-247{display:inline-flex;align-items:center;gap:5px;font-size:.6rem;font-weight:700;color:var(--ember);text-transform:uppercase;letter-spacing:.1em;background:rgba(217,129,104,.1);border:1px solid rgba(217,129,104,.22);padding:3px 11px;border-radius:999px}
+.combat-247.wc-badge{color:var(--slate);background:rgba(143,164,192,.1);border-color:rgba(143,164,192,.25)}
 .combat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .combat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 12px 14px;cursor:pointer;text-align:center;transition:background .2s,border-color .2s;box-shadow:var(--highlight)}
 .combat-card:hover{background:var(--surface-2);border-color:var(--border-strong)}
