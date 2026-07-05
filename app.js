@@ -649,31 +649,63 @@ async function fetchAnimeEpisodes(show) {
   for (const itemId of show.archiveItems) {
     try {
       const data = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent("https://archive.org/metadata/" + itemId)).then(r => r.json());
-      const base = "https://archive.org/download/" + itemId + "/";
+      // Resolve the direct storage-node URL (e.g. https://ia601904.us.archive.org/23/items/<id>/)
+      // instead of https://archive.org/download/<id>/ which 302-redirects — the redirect adds
+      // latency and can hang on mobile; the direct node serves bytes with Range support.
+      const base = (data.server && data.dir)
+        ? "https://" + data.server + data.dir + "/"
+        : "https://archive.org/download/" + itemId + "/";
       for (const f of (data.files || [])) {
         if (!/\.(mp4|m4v)$/i.test(f.name) || Number(f.size || 0) < 8e6) continue;
         const fname = f.name.split("/").pop();
         const numM  = fname.match(/(\d{1,4})/);
         const sort  = numM ? Number(numM[1]) : 99999;
         const title = fname.replace(/\.(mp4|m4v)$/i, "").replace(/^\d{1,4}[\s._-]*/, "").replace(/[_.]+/g, " ").replace(/\s+/g, " ").trim();
-        collected.push({ sort, title, url: base + f.name.split("/").map(encodeURIComponent).join("/") });
+        // h.264 derivatives are web-optimised (faststart) — mark them so they can be preferred.
+        const web = f.source === "derivative" || /h\.?264/i.test(f.format || "");
+        collected.push({ sort, title, web, url: base + f.name.split("/").map(encodeURIComponent).join("/") });
       }
     } catch (_) {}
   }
-  collected.sort((a, b) => a.sort - b.sort);
-  const eps = collected.map((e, i) => ({ num: i + 1, title: e.title || ("Episode " + (i + 1)), url: e.url }));
+  // De-dup by episode number, preferring the web-optimised (faststart) copy when both exist.
+  const byNum = new Map();
+  for (const e of collected) {
+    const prev = byNum.get(e.sort);
+    if (!prev || (e.web && !prev.web)) byNum.set(e.sort, e);
+  }
+  const merged = [...byNum.values()].sort((a, b) => a.sort - b.sort);
+  const eps = merged.map((e, i) => ({ num: i + 1, title: e.title || ("Episode " + (i + 1)), url: e.url }));
   animeEpCache[show.id] = eps;
   return eps;
 }
 
+let animeStallTimer = null;
+function setAnimeStatus(text) {
+  const el = document.getElementById("animeEpCurrent");
+  if (el) el.textContent = text;
+}
 function playAnimeEpisode(idx) {
   if (!animeCurrent) return;
   const ep = animeCurrent.eps[idx];
   if (!ep) return;
   animeCurrent.idx = idx;
+  const label = "Ep " + ep.num + " · " + ep.title;
+
+  // Feedback so a slow or blocked stream never looks like a silent dead player.
+  clearTimeout(animeStallTimer);
+  animeVideo.onwaiting = () => setAnimeStatus("⏳ Buffering — " + label);
+  animeVideo.onplaying  = () => { clearTimeout(animeStallTimer); setAnimeStatus("▶ " + label); };
+  animeVideo.onloadeddata = () => setAnimeStatus("▶ " + label);
+  animeVideo.onerror = () => setAnimeStatus("⚠ Couldn't load this episode — try another (source can be slow).");
+  // Watchdog: if nothing has buffered after 25s the source is stalling on this network.
+  animeStallTimer = setTimeout(() => {
+    if (animeVideo.readyState < 2) setAnimeStatus("⚠ Still loading — this source is slow right now. Try another episode.");
+  }, 25000);
+
   animeVideo.src = ep.url;
+  animeVideo.load();
   animeVideo.play().catch(() => {});
-  document.getElementById("animeEpCurrent").textContent = "Ep " + ep.num + " · " + ep.title;
+  setAnimeStatus("⏳ Loading — " + label);
   document.querySelectorAll("#animeEpStrip .anime-ep-btn").forEach(b =>
     b.classList.toggle("active", Number(b.dataset.idx) === idx));
 }
@@ -725,6 +757,8 @@ async function openAnimePlayer(show) {
 function closeAnimePlayer() {
   animeModal.classList.remove("open");
   document.body.style.overflow = "";
+  clearTimeout(animeStallTimer);
+  animeVideo.onwaiting = animeVideo.onplaying = animeVideo.onloadeddata = animeVideo.onerror = null;
   animeVideo.pause();
   animeVideo.removeAttribute("src");
   animeVideo.load();
