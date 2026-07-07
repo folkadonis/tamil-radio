@@ -221,8 +221,10 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .cartoon-modal-inner{width:100%;max-width:960px;margin:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
 .cartoon-modal-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#151a20}
 .cartoon-badge{display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;color:var(--brass);text-transform:uppercase;letter-spacing:.1em;background:rgba(217,167,97,.1);padding:3px 9px;border-radius:999px;margin-right:8px}
-#cartoonIframe,#movieIframe{width:100%;aspect-ratio:16/9;display:block;background:#000;border:none}
-@media(max-width:640px){.cartoon-modal-inner{margin:0;border-radius:0;border:none;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.cartoon-modal{align-items:stretch}#cartoonIframe,#movieIframe{flex:1;aspect-ratio:unset}}
+#cartoonIframe,#movieIframe,#movieVideo{width:100%;aspect-ratio:16/9;display:block;background:#000;border:none}
+.cartoon-modal-inner{position:relative}
+.movie-msg{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:#e6e6e6;font-size:.9rem;padding:0 24px;pointer-events:none}
+@media(max-width:640px){.cartoon-modal-inner{margin:0;border-radius:0;border:none;position:fixed;inset:0;max-width:100%;display:flex;flex-direction:column}.cartoon-modal{align-items:stretch}#cartoonIframe,#movieIframe,#movieVideo{flex:1;aspect-ratio:unset}}
 
 /* ===== Anime ===== */
 .cartoon-src-badge.anime-src{background:rgba(217,167,97,.9);color:var(--brass-ink)}

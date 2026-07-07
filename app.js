@@ -361,6 +361,8 @@ const movieModal    = document.getElementById("movieModal");
 const movieModalName = document.getElementById("movieModalName");
 const movieModalClose = document.getElementById("movieModalClose");
 const movieIframe   = document.getElementById("movieIframe");
+const movieVideo    = document.getElementById("movieVideo");
+const movieMsg      = document.getElementById("movieMsg");
 const animeGrid     = document.getElementById("animeGrid");
 const animeModal    = document.getElementById("animeModal");
 const animeModalName = document.getElementById("animeModalName");
@@ -782,10 +784,21 @@ const MOVIES = [
     id: "the-sheep-detectives-2026",
     title: "The Sheep Detectives",
     subtitle: "2026 · 1080p HDRip · Tam·Tel·Hin·Mal·Kan·Eng · ESub",
+    // mp4Url: a browser-playable MP4 (H.264/AAC) — plays in the app's own player.
+    // driveMp4Id: a Drive file id for an MP4 — streamed natively via Drive's
+    //   direct-download endpoint. driveId: any Drive file (incl. MKV) played in
+    //   Drive's /preview iframe as a fallback.
+    mp4Url: "",
+    driveMp4Id: "",
     driveId: "1yGOudd-xiYvo4_uQJnFDCMkUbV8yFGxT",
     tag: "1080p"
   }
 ];
+
+// Google Drive direct-stream URL (serves the raw bytes with Range + CORS).
+function driveDirectUrl(id) {
+  return `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
+}
 
 function renderMovies() {
   const query = searchInput.value.toLowerCase().trim();
@@ -820,7 +833,27 @@ function renderMovies() {
 
 function openMoviePlayer(movie) {
   movieModalName.textContent = movie.title;
-  movieIframe.src = `https://drive.google.com/file/d/${movie.driveId}/preview`;
+  // Prefer a native MP4 (app's own player); fall back to Drive's /preview iframe.
+  const nativeUrl = movie.mp4Url || (movie.driveMp4Id ? driveDirectUrl(movie.driveMp4Id) : "");
+  const setMsg = t => { movieMsg.textContent = t; movieMsg.style.display = t ? "block" : "none"; };
+  if (nativeUrl) {
+    movieIframe.style.display = "none";
+    movieIframe.src = "";
+    movieVideo.style.display = "block";
+    setMsg("⏳ Loading…");
+    movieVideo.onloadeddata = () => setMsg("");
+    movieVideo.onplaying    = () => setMsg("");
+    movieVideo.onwaiting    = () => setMsg("⏳ Buffering…");
+    movieVideo.onerror      = () => setMsg("⚠ Couldn't load this movie. The source may be offline or the link expired.");
+    movieVideo.src = nativeUrl;
+    movieVideo.play().catch(() => {});
+  } else {
+    setMsg("");
+    movieVideo.style.display = "none";
+    movieVideo.removeAttribute("src");
+    movieIframe.style.display = "block";
+    movieIframe.src = `https://drive.google.com/file/d/${movie.driveId}/preview`;
+  }
   movieModal.classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -829,6 +862,11 @@ function closeMoviePlayer() {
   movieModal.classList.remove("open");
   document.body.style.overflow = "";
   movieIframe.src = "";
+  movieVideo.onloadeddata = movieVideo.onplaying = movieVideo.onwaiting = movieVideo.onerror = null;
+  movieVideo.pause();
+  movieVideo.removeAttribute("src");
+  movieVideo.load();
+  movieMsg.style.display = "none";
 }
 
 movieModalClose.addEventListener("click", closeMoviePlayer);
