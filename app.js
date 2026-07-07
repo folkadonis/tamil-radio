@@ -356,6 +356,11 @@ const cartoonModal  = document.getElementById("cartoonModal");
 const cartoonModalName = document.getElementById("cartoonModalName");
 const cartoonModalClose = document.getElementById("cartoonModalClose");
 const cartoonIframe = document.getElementById("cartoonIframe");
+const moviesGrid    = document.getElementById("moviesGrid");
+const movieModal    = document.getElementById("movieModal");
+const movieModalName = document.getElementById("movieModalName");
+const movieModalClose = document.getElementById("movieModalClose");
+const movieIframe   = document.getElementById("movieIframe");
 const animeGrid     = document.getElementById("animeGrid");
 const animeModal    = document.getElementById("animeModal");
 const animeModalName = document.getElementById("animeModalName");
@@ -767,6 +772,67 @@ function closeAnimePlayer() {
 
 animeModalClose.addEventListener("click", closeAnimePlayer);
 animeModal.addEventListener("click", e => { if (e.target === animeModal) closeAnimePlayer(); });
+
+/* ===== Movies ===== */
+/* Google Drive-hosted films, played in Drive's own /preview player (handles
+   MKV/large files that a raw <video> tag can't). The file must be shared
+   "Anyone with the link". Add more entries to grow the library. */
+const MOVIES = [
+  {
+    id: "the-sheep-detectives-2026",
+    title: "The Sheep Detectives",
+    subtitle: "2026 · 1080p HDRip · Tam·Tel·Hin·Mal·Kan·Eng · ESub",
+    driveId: "1yGOudd-xiYvo4_uQJnFDCMkUbV8yFGxT",
+    tag: "1080p"
+  }
+];
+
+function renderMovies() {
+  const query = searchInput.value.toLowerCase().trim();
+  const list  = MOVIES.filter(m => !query || m.title.toLowerCase().includes(query) || m.subtitle.toLowerCase().includes(query));
+  if (!list.length) { moviesGrid.innerHTML = ""; emptyState.style.display = "flex"; return; }
+  emptyState.style.display = "none";
+  moviesGrid.innerHTML = list.map(m => {
+    const cover = `https://drive.google.com/thumbnail?id=${m.driveId}&sz=w640`;
+    return `
+    <div class="cartoon-card" data-mid="${m.id}">
+      <div class="cartoon-thumb">
+        <img class="cartoon-img" src="${cover}" alt="${m.title}" onerror="this.style.display='none'">
+        <div class="cartoon-play-overlay">
+          <div class="cartoon-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <span class="cartoon-ep-tag">${m.tag}</span>
+        <span class="cartoon-src-badge anime-src">🍿 MOVIE</span>
+      </div>
+      <div class="cartoon-meta">
+        <p class="cartoon-title">${m.title}</p>
+        <p class="cartoon-sub">${m.subtitle}</p>
+      </div>
+    </div>`;
+  }).join("");
+  moviesGrid.querySelectorAll(".cartoon-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const movie = MOVIES.find(m => m.id === card.dataset.mid);
+      if (movie) openMoviePlayer(movie);
+    });
+  });
+}
+
+function openMoviePlayer(movie) {
+  movieModalName.textContent = movie.title;
+  movieIframe.src = `https://drive.google.com/file/d/${movie.driveId}/preview`;
+  movieModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMoviePlayer() {
+  movieModal.classList.remove("open");
+  document.body.style.overflow = "";
+  movieIframe.src = "";
+}
+
+movieModalClose.addEventListener("click", closeMoviePlayer);
+movieModal.addEventListener("click", e => { if (e.target === movieModal) closeMoviePlayer(); });
 
 /* ===== Sports ===== */
 /* Combat channels — live-tested, CORS-verified 24/7 streams */
@@ -1264,17 +1330,20 @@ function setView(cat) {
   const isTV      = cat === "tv";
   const isCartoon = cat === "cartoon";
   const isAnime   = cat === "anime";
+  const isMovies  = cat === "movies";
   const isSports  = cat === "sports";
-  grid.style.display        = (!isTV && !isCartoon && !isAnime && !isSports) ? "" : "none";
+  grid.style.display        = (!isTV && !isCartoon && !isAnime && !isMovies && !isSports) ? "" : "none";
   tvGrid.style.display      = isTV ? "grid" : "none";
   cartoonGrid.style.display = isCartoon ? "grid" : "none";
   animeGrid.style.display   = isAnime ? "grid" : "none";
+  moviesGrid.style.display  = isMovies ? "grid" : "none";
   sportsGrid.style.display  = isSports ? "block" : "none";
   emptyState.style.display  = "none";
-  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : isAnime ? "Search anime..." : "Search stations...";
+  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : isAnime ? "Search anime..." : isMovies ? "Search movies..." : "Search stations...";
   if (isTV)           renderTV();
   else if (isCartoon) renderCartoons();
   else if (isAnime)   renderAnime();
+  else if (isMovies)  renderMovies();
   else if (isSports)  renderSports();
   else                renderStations();
 }
@@ -1444,6 +1513,7 @@ searchInput.addEventListener("input", () => {
   if (currentCat === "tv") renderTV();
   else if (currentCat === "cartoon") renderCartoons();
   else if (currentCat === "anime") renderAnime();
+  else if (currentCat === "movies") renderMovies();
   else renderStations();
 });
 
@@ -1456,7 +1526,7 @@ playerFreq.addEventListener("click", () => {
 
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
-  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); closeCartoonPlayer(); closeAnimePlayer(); }
+  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); closeCartoonPlayer(); closeAnimePlayer(); closeMoviePlayer(); }
   if (e.code === "Space" && currentCat !== "tv") { e.preventDefault(); togglePlay(); }
   if (e.code === "ArrowRight") nextBtn.click();
   if (e.code === "ArrowLeft")  prevBtn.click();
