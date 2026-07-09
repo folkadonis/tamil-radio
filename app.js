@@ -126,9 +126,18 @@ const STATIONS = [
 /* ===== Cartoon Data ===== */
 const CARTOONS = [
   /* ── GGO Football (AI Football GGO) — Tamil dub (Chutti TV) ──
-     Embeddable source (TAMIL CARTOON WORLD). The fuller run (ANIME RECALLS)
-     has embedding disabled by that uploader, so this S2 E1–16 set is what
-     actually plays inside the app. */
+     Embeddable sources only. The fuller ANIME RECALLS run has embedding
+     disabled by that uploader, so these embeddable playlists are used:
+     S1 = Dual Tamil Cartooners (ep 1–52, a few gaps), S2 = Tamil Cartoon World. */
+  {
+    id: "ggo-s1-dtc",
+    name: "GGO Football — Season 1",
+    subtitle: "Tamil Dubbed · Chutti TV · Episodes 1–52",
+    cover: "https://i.ytimg.com/vi/x_8xR0yDZok/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLUHJQDb6G4aTk8FWWAD-WwuRCR63klTNv",
+    tag: "48 Episodes"
+  },
   {
     id: "ggo-s2-tcw",
     name: "GGO Football — Season 2",
