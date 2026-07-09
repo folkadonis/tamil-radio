@@ -23,19 +23,38 @@ export default {
     }
 
     const reqUrl = new URL(request.url);
+
+    // Targets may be passed either as ?url=<encoded> (plain) or ?b64=<base64url>.
+    // The base64 form keeps the destination domain out of the request URL, so
+    // client-side content/ad blockers can't pattern-match it (some block known
+    // manga/CDN domains by substring, which would otherwise kill every image).
+    const fromB64Url = s => {
+      s = s.replace(/-/g, '+').replace(/_/g, '/');
+      while (s.length % 4) s += '=';
+      return decodeURIComponent(escape(atob(s)));
+    };
+    const b64Target = reqUrl.searchParams.get('b64');
     const rawTarget = reqUrl.searchParams.get('url');
 
-    if (!rawTarget) {
+    if (!b64Target && !rawTarget) {
       return new Response(
-        'Tamil Radio TV — HLS CORS Proxy\nUsage: ?url=<encoded-stream-url>',
+        'Tamil Radio TV — HLS CORS Proxy\nUsage: ?url=<encoded-stream-url> or ?b64=<base64url>',
         { status: 200, headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS } }
       );
     }
 
-    const targetUrl = decodeURIComponent(rawTarget);
+    let targetUrl;
+    try {
+      targetUrl = b64Target ? fromB64Url(b64Target) : decodeURIComponent(rawTarget);
+    } catch (e) {
+      return new Response('Bad target: ' + e.message, { status: 400, headers: CORS_HEADERS });
+    }
+
     // Optional referer — some hosts (e.g. manga image CDNs) hotlink-protect
-    // their files and 403 without the originating site's Referer header.
-    const referer = reqUrl.searchParams.get('referer');
+    // their files and 403 without the originating site's Referer header. Also
+    // accept it base64url-encoded (r64) for the same blocker-evasion reason.
+    const r64 = reqUrl.searchParams.get('r64');
+    const referer = r64 ? fromB64Url(r64) : reqUrl.searchParams.get('referer');
 
     let upstream;
     try {

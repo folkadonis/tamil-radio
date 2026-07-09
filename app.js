@@ -916,7 +916,12 @@ const MANGA = [
   }
 ];
 const MANGA_REFERER = "https://mangapill.com/";
-const mangaImg = u => CORS_PROXY + "/?url=" + encodeURIComponent(u) + "&referer=" + encodeURIComponent(MANGA_REFERER);
+// base64url-encode targets so the manga domains never appear in a request URL —
+// otherwise Safari/mobile content blockers that match domains like
+// "mangapill.com" / "readdetectiveconan.com" by substring block every fetch.
+const b64url = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const mangaProxy = u => CORS_PROXY + "/?b64=" + b64url(u);
+const mangaImg = u => CORS_PROXY + "/?b64=" + b64url(u) + "&r64=" + b64url(MANGA_REFERER);
 const mangaChCache = {};
 let mangaCurrent = null;   // { show, chapters, idx }
 
@@ -949,7 +954,7 @@ function renderManga() {
 
 async function fetchMangaChapters(show) {
   if (mangaChCache[show.id]) return mangaChCache[show.id];
-  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent(show.seriesUrl)).then(r => r.text());
+  const html = await fetch(mangaProxy(show.seriesUrl)).then(r => r.text());
   const map = new Map();
   for (const m of html.matchAll(/href="(\/chapters\/[^"]*chapter-([\d.]+))"/gi)) {
     const num = m[2];
@@ -963,9 +968,12 @@ async function fetchMangaChapters(show) {
 }
 
 async function fetchChapterPages(url) {
-  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent(url)).then(r => r.text());
+  const html = await fetch(mangaProxy(url)).then(r => r.text());
   const pages = [];
-  for (const m of html.matchAll(/data-src="(https:\/\/[^"]+\.(?:jpe?g|png|webp))"/gi)) pages.push(m[1]);
+  // Match the page-image URL straight off the <img class="js-page"> tag. Older
+  // chapters append a ?t=<ts> cache-buster after the extension, so we can't
+  // anchor on the extension being the end of the URL.
+  for (const m of html.matchAll(/js-page[^>]*\sdata-src="([^"]+)"/gi)) pages.push(m[1]);
   return pages;
 }
 
@@ -1030,7 +1038,7 @@ async function openMangaReader(show) {
     mangaPages.innerHTML = `<div class="manga-loading">Couldn't load chapters. Check your connection and try again.</div>`;
     return;
   }
-  mangaCurrent = { show, chapters, idx: chapters.length - 1 };   // default to latest chapter
+  mangaCurrent = { show, chapters, idx: 0 };   // start from chapter 1
 
   const rangeStrip = document.getElementById("mangaRangeStrip");
   const chips = [];
