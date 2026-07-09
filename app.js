@@ -390,6 +390,11 @@ const animeModal    = document.getElementById("animeModal");
 const animeModalName = document.getElementById("animeModalName");
 const animeModalClose = document.getElementById("animeModalClose");
 const animeVideo    = document.getElementById("animeVideo");
+const mangaGrid     = document.getElementById("mangaGrid");
+const mangaModal    = document.getElementById("mangaModal");
+const mangaModalName = document.getElementById("mangaModalName");
+const mangaModalClose = document.getElementById("mangaModalClose");
+const mangaPages    = document.getElementById("mangaPages");
 
 /* ===== State ===== */
 let currentStation = null;
@@ -895,6 +900,176 @@ function closeMoviePlayer() {
 movieModalClose.addEventListener("click", closeMoviePlayer);
 movieModal.addEventListener("click", e => { if (e.target === movieModal) closeMoviePlayer(); });
 
+/* ===== Manga ===== */
+/* Read chapter-by-chapter inside the app. The chapter list and page images are
+   scraped live from mangapill each time a title is opened, so new chapters show
+   up automatically — nothing to hard-code. The image CDN is hotlink-protected,
+   so pages (and covers) load through the CORS worker with a &referer= param. */
+const MANGA = [
+  {
+    id: "one-piece-manga",
+    title: "One Piece",
+    subtitle: "Manga · Ch. 1 → latest · Updated weekly",
+    cover: "https://cdn.readdetectiveconan.com/file/mangapill/i/2.webp",
+    seriesUrl: "https://mangapill.com/manga/2/one-piece",
+    tag: "1180+ Ch"
+  }
+];
+const MANGA_REFERER = "https://mangapill.com/";
+const mangaImg = u => CORS_PROXY + "/?url=" + encodeURIComponent(u) + "&referer=" + encodeURIComponent(MANGA_REFERER);
+const mangaChCache = {};
+let mangaCurrent = null;   // { show, chapters, idx }
+
+function renderManga() {
+  const query = searchInput.value.toLowerCase().trim();
+  const list  = MANGA.filter(m => !query || m.title.toLowerCase().includes(query) || m.subtitle.toLowerCase().includes(query));
+  if (!list.length) { mangaGrid.innerHTML = ""; emptyState.style.display = "flex"; return; }
+  emptyState.style.display = "none";
+  mangaGrid.innerHTML = list.map(m => `
+    <div class="cartoon-card" data-mgid="${m.id}">
+      <div class="cartoon-thumb">
+        <img class="cartoon-img" src="${mangaImg(m.cover)}" alt="${m.title}" onerror="this.style.display='none'">
+        <div class="cartoon-play-overlay">
+          <div class="cartoon-play-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <span class="cartoon-ep-tag">${m.tag}</span>
+        <span class="cartoon-src-badge anime-src">📖 MANGA</span>
+      </div>
+      <div class="cartoon-meta">
+        <p class="cartoon-title">${m.title}</p>
+        <p class="cartoon-sub">${m.subtitle}</p>
+      </div>
+    </div>`).join("");
+  mangaGrid.querySelectorAll(".cartoon-card").forEach(card =>
+    card.addEventListener("click", () => {
+      const show = MANGA.find(m => m.id === card.dataset.mgid);
+      if (show) openMangaReader(show);
+    }));
+}
+
+async function fetchMangaChapters(show) {
+  if (mangaChCache[show.id]) return mangaChCache[show.id];
+  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent(show.seriesUrl)).then(r => r.text());
+  const map = new Map();
+  for (const m of html.matchAll(/href="(\/chapters\/[^"]*chapter-([\d.]+))"/gi)) {
+    const num = m[2];
+    if (!map.has(num)) map.set(num, "https://mangapill.com" + m[1]);
+  }
+  const chapters = [...map.entries()]
+    .map(([num, url]) => ({ num: parseFloat(num), label: num, url }))
+    .sort((a, b) => a.num - b.num);
+  mangaChCache[show.id] = chapters;
+  return chapters;
+}
+
+async function fetchChapterPages(url) {
+  const html = await fetch(CORS_PROXY + "/?url=" + encodeURIComponent(url)).then(r => r.text());
+  const pages = [];
+  for (const m of html.matchAll(/data-src="(https:\/\/[^"]+\.(?:jpe?g|png|webp))"/gi)) pages.push(m[1]);
+  return pages;
+}
+
+function setMangaStatus(t) { document.getElementById("mangaChCurrent").textContent = t; }
+
+async function openMangaChapter(idx) {
+  if (!mangaCurrent) return;
+  const ch = mangaCurrent.chapters[idx];
+  if (!ch) return;
+  mangaCurrent.idx = idx;
+  setMangaStatus("Chapter " + ch.label + " · loading…");
+  mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading pages…</div>`;
+  document.querySelectorAll("#mangaChStrip .manga-ch-btn").forEach(b =>
+    b.classList.toggle("active", Number(b.dataset.idx) === idx));
+  let pages = [];
+  try { pages = await fetchChapterPages(ch.url); } catch (_) {}
+  if (!mangaCurrent || mangaCurrent.idx !== idx) return;   // user moved on
+  if (!pages.length) {
+    mangaPages.innerHTML = `<div class="manga-loading">Couldn't load this chapter. Try another one.</div>`;
+    setMangaStatus("Chapter " + ch.label);
+    return;
+  }
+  mangaPages.innerHTML = pages.map((p, i) =>
+    `<img class="manga-page-img" loading="lazy" src="${mangaImg(p)}" alt="Page ${i + 1}">`).join("");
+  mangaPages.scrollTop = 0;
+  setMangaStatus("Chapter " + ch.label + " · " + pages.length + " pages");
+}
+
+function renderMangaChapterRange(chapters, startIdx) {
+  const strip = document.getElementById("mangaChStrip");
+  const slice = chapters.slice(startIdx, startIdx + 50);
+  strip.innerHTML = slice.map((c, i) => {
+    const idx = startIdx + i;
+    const active = mangaCurrent && idx === mangaCurrent.idx ? " active" : "";
+    return `<button class="manga-ch-btn${active}" data-idx="${idx}">${c.label}</button>`;
+  }).join("");
+  strip.querySelectorAll(".manga-ch-btn").forEach(b =>
+    b.addEventListener("click", () => openMangaChapter(Number(b.dataset.idx))));
+}
+
+// Make the range chip that contains `idx` active and render that chunk.
+function focusMangaRange(idx) {
+  const strip = document.getElementById("mangaRangeStrip");
+  const start = Math.floor(idx / 50) * 50;
+  strip.querySelectorAll(".manga-range-btn").forEach(b =>
+    b.classList.toggle("active", Number(b.dataset.start) === start));
+  renderMangaChapterRange(mangaCurrent.chapters, start);
+}
+
+async function openMangaReader(show) {
+  mangaModalName.textContent = show.title;
+  mangaModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading chapters…</div>`;
+  document.getElementById("mangaRangeStrip").innerHTML = "";
+  document.getElementById("mangaChStrip").innerHTML = "";
+  setMangaStatus("");
+  let chapters = [];
+  try { chapters = await fetchMangaChapters(show); } catch (_) {}
+  if (!mangaModal.classList.contains("open")) return;   // closed while loading
+  if (!chapters.length) {
+    mangaPages.innerHTML = `<div class="manga-loading">Couldn't load chapters. Check your connection and try again.</div>`;
+    return;
+  }
+  mangaCurrent = { show, chapters, idx: chapters.length - 1 };   // default to latest chapter
+
+  const rangeStrip = document.getElementById("mangaRangeStrip");
+  const chips = [];
+  for (let i = 0; i < chapters.length; i += 50) {
+    const a = chapters[i].label, b = chapters[Math.min(i + 49, chapters.length - 1)].label;
+    chips.push(`<button class="manga-range-btn" data-start="${i}">${a}–${b}</button>`);
+  }
+  rangeStrip.innerHTML = chips.join("");
+  rangeStrip.querySelectorAll(".manga-range-btn").forEach(btn =>
+    btn.addEventListener("click", () => {
+      rangeStrip.querySelectorAll(".manga-range-btn").forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+      renderMangaChapterRange(chapters, Number(btn.dataset.start));
+    }));
+
+  focusMangaRange(mangaCurrent.idx);
+  openMangaChapter(mangaCurrent.idx);
+}
+
+function gotoMangaChapter(delta) {
+  if (!mangaCurrent) return;
+  const next = mangaCurrent.idx + delta;
+  if (next < 0 || next >= mangaCurrent.chapters.length) return;
+  focusMangaRange(next);
+  openMangaChapter(next);
+}
+
+function closeMangaReader() {
+  mangaModal.classList.remove("open");
+  document.body.style.overflow = "";
+  mangaPages.innerHTML = "";
+  mangaCurrent = null;
+}
+
+mangaModalClose.addEventListener("click", closeMangaReader);
+mangaModal.addEventListener("click", e => { if (e.target === mangaModal) closeMangaReader(); });
+document.getElementById("mangaPrevBtn").addEventListener("click", () => gotoMangaChapter(-1));
+document.getElementById("mangaNextBtn").addEventListener("click", () => gotoMangaChapter(1));
+
 /* ===== Sports ===== */
 /* Combat channels — live-tested, CORS-verified 24/7 streams */
 const COMBAT_CHANNELS = [
@@ -1391,19 +1566,22 @@ function setView(cat) {
   const isTV      = cat === "tv";
   const isCartoon = cat === "cartoon";
   const isAnime   = cat === "anime";
+  const isManga   = cat === "manga";
   const isMovies  = cat === "movies";
   const isSports  = cat === "sports";
-  grid.style.display        = (!isTV && !isCartoon && !isAnime && !isMovies && !isSports) ? "" : "none";
+  grid.style.display        = (!isTV && !isCartoon && !isAnime && !isManga && !isMovies && !isSports) ? "" : "none";
   tvGrid.style.display      = isTV ? "grid" : "none";
   cartoonGrid.style.display = isCartoon ? "grid" : "none";
   animeGrid.style.display   = isAnime ? "grid" : "none";
+  mangaGrid.style.display   = isManga ? "grid" : "none";
   moviesGrid.style.display  = isMovies ? "grid" : "none";
   sportsGrid.style.display  = isSports ? "block" : "none";
   emptyState.style.display  = "none";
-  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : isAnime ? "Search anime..." : isMovies ? "Search movies..." : "Search stations...";
+  searchInput.placeholder   = isTV ? "Search channels..." : isCartoon ? "Search cartoons..." : isAnime ? "Search anime..." : isManga ? "Search manga..." : isMovies ? "Search movies..." : "Search stations...";
   if (isTV)           renderTV();
   else if (isCartoon) renderCartoons();
   else if (isAnime)   renderAnime();
+  else if (isManga)   renderManga();
   else if (isMovies)  renderMovies();
   else if (isSports)  renderSports();
   else                renderStations();
@@ -1574,6 +1752,7 @@ searchInput.addEventListener("input", () => {
   if (currentCat === "tv") renderTV();
   else if (currentCat === "cartoon") renderCartoons();
   else if (currentCat === "anime") renderAnime();
+  else if (currentCat === "manga") renderManga();
   else if (currentCat === "movies") renderMovies();
   else renderStations();
 });
@@ -1587,7 +1766,7 @@ playerFreq.addEventListener("click", () => {
 
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
-  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); closeCartoonPlayer(); closeAnimePlayer(); closeMoviePlayer(); }
+  if (e.key === "Escape") { closeTVPlayer(); closeCommunity(); closeCartoonPlayer(); closeAnimePlayer(); closeMangaReader(); closeMoviePlayer(); }
   if (e.code === "Space" && currentCat !== "tv") { e.preventDefault(); togglePlay(); }
   if (e.code === "ArrowRight") nextBtn.click();
   if (e.code === "ArrowLeft")  prevBtn.click();

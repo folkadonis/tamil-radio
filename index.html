@@ -72,6 +72,7 @@
       <button class="tab" data-cat="tv">📺 Live TV</button>
       <button class="tab" data-cat="cartoon">🎬 Cartoon</button>
       <button class="tab" data-cat="anime">🏴‍☠️ Anime</button>
+      <button class="tab" data-cat="manga">📖 Manga</button>
       <button class="tab" data-cat="movies">🍿 Movies</button>
       <button class="tab" data-cat="sports">⚽ Sports</button>
     </div>
@@ -87,6 +88,9 @@
 
     <!-- Anime Grid -->
     <div class="cartoon-grid" id="animeGrid" style="display:none;"></div>
+
+    <!-- Manga Grid -->
+    <div class="cartoon-grid" id="mangaGrid" style="display:none;"></div>
 
     <!-- Movies Grid -->
     <div class="cartoon-grid" id="moviesGrid" style="display:none;"></div>
@@ -181,6 +185,31 @@
         <div class="anime-ep-current" id="animeEpCurrent">Loading…</div>
         <div class="anime-range-strip" id="animeRangeStrip"></div>
         <div class="anime-ep-strip" id="animeEpStrip"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manga Reader Modal -->
+  <div class="manga-modal" id="mangaModal">
+    <div class="manga-modal-inner">
+      <div class="manga-modal-top">
+        <div class="tv-modal-info">
+          <span class="anime-badge">📖 MANGA</span>
+          <span class="tv-modal-name" id="mangaModalName"></span>
+          <span class="manga-ch-current" id="mangaChCurrent"></span>
+        </div>
+        <div class="manga-top-actions">
+          <button class="manga-nav-btn" id="mangaPrevBtn" title="Previous chapter">‹ Prev</button>
+          <button class="manga-nav-btn" id="mangaNextBtn" title="Next chapter">Next ›</button>
+          <button class="tv-modal-close" id="mangaModalClose" aria-label="Close reader">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="manga-pages" id="mangaPages"></div>
+      <div class="manga-ch-bar">
+        <div class="manga-range-strip" id="mangaRangeStrip"></div>
+        <div class="manga-ch-strip" id="mangaChStrip"></div>
       </div>
     </div>
   </div>

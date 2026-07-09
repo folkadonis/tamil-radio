@@ -33,15 +33,19 @@ export default {
     }
 
     const targetUrl = decodeURIComponent(rawTarget);
+    // Optional referer — some hosts (e.g. manga image CDNs) hotlink-protect
+    // their files and 403 without the originating site's Referer header.
+    const referer = reqUrl.searchParams.get('referer');
 
     let upstream;
     try {
       upstream = await fetch(targetUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; HLSProxy/1.0)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
           'Accept': '*/*',
+          ...(referer ? { 'Referer': referer, 'Origin': new URL(referer).origin } : {}),
         },
-        cf: { cacheTtl: 2 },
+        cf: { cacheTtl: 300 },
       });
     } catch (err) {
       return new Response('Upstream error: ' + err.message, {
