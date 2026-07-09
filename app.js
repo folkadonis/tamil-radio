@@ -125,6 +125,19 @@ const STATIONS = [
 
 /* ===== Cartoon Data ===== */
 const CARTOONS = [
+  /* ── GGO Football (AI Football GGO) — Tamil dub (Chutti TV) ──
+     Embeddable source (TAMIL CARTOON WORLD). The fuller run (ANIME RECALLS)
+     has embedding disabled by that uploader, so this S2 E1–16 set is what
+     actually plays inside the app. */
+  {
+    id: "ggo-s2-tcw",
+    name: "GGO Football — Season 2",
+    subtitle: "Tamil Dubbed · Chutti TV · Episodes 1–16",
+    cover: "https://i.ytimg.com/vi/2acZW4BRpI8/hqdefault.jpg",
+    source: "youtube",
+    playlistId: "PLE_NIMDyEpnKywQ7C6xjFovguSGL9xA4V",
+    tag: "16 Episodes"
+  },
   /* ── Jackie Chan Adventures Tamil — Complete ── */
   {
     id: "jca-all-yt",
@@ -535,6 +548,7 @@ tvModal.addEventListener("click", e => { if (e.target === tvModal) closeTVPlayer
 
 /* ===== Cartoon Render ===== */
 const CARTOON_SECTIONS = [
+  { prefix: ["ggo"],               label: "⚽ GGO Football — Tamil (Chutti TV)" },
   { prefix: ["jca"],               label: "🥋 Jackie Chan Adventures — Tamil" },
   { prefix: ["dbz", "dbs"],        label: "🐉 Dragon Ball — Tamil" },
   { prefix: ["naruto"],            label: "🍥 Naruto — Tamil" },
