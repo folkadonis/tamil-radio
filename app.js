@@ -1002,6 +1002,7 @@ async function openMangaChapter(idx) {
   mangaCurrent.pages = pages;
   mangaCurrent.pageIdx = 0;
   renderMangaPage();
+  hideMangaControls();   // return to the full-screen view once the chapter is ready
 }
 
 // Single-page view: tap the left/right edge of the page to turn it, tap the
@@ -1036,6 +1037,7 @@ function mangaGoPage(delta) {
 
 function toggleMangaControls() { mangaModal.classList.toggle("manga-controls-hidden"); }
 function showMangaControls()   { mangaModal.classList.remove("manga-controls-hidden"); }
+function hideMangaControls()   { mangaModal.classList.add("manga-controls-hidden"); }
 
 function applyMangaZoom() {
   const img = document.getElementById("mangaPageImg");
