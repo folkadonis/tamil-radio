@@ -254,14 +254,14 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 /* ===== Manga Reader ===== */
 .manga-modal{position:fixed;inset:0;z-index:300;background:rgba(10,12,15,.97);display:none;align-items:center;justify-content:center}
 .manga-modal.open{display:flex}
-.manga-modal-inner{width:100%;max-width:900px;height:94vh;margin:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column}
+.manga-modal-inner{width:100%;max-width:100%;height:100%;margin:0;border-radius:0;overflow:hidden;border:none;background:var(--surface);display:flex;flex-direction:column}
 .manga-modal-top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);gap:10px;flex-wrap:wrap;flex-shrink:0}
 .manga-ch-current{font-size:.72rem;color:var(--text-dim)}
 .manga-top-actions{display:flex;align-items:center;gap:8px}
 .manga-nav-btn{background:rgba(217,167,97,.12);color:var(--brass);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit}
 .manga-nav-btn:hover{background:rgba(217,167,97,.22)}
 .manga-pages{flex:1 1 auto;overflow-y:auto;background:#000;text-align:center;min-height:0;-webkit-overflow-scrolling:touch}
-.manga-page-img{display:block;width:100%;max-width:720px;margin:0 auto;background:#111}
+.manga-page-img{display:block;width:100%;max-width:1100px;margin:0 auto;background:#111}
 .manga-loading{color:var(--text-dim);padding:44px 20px;text-align:center;font-size:.85rem;display:flex;align-items:center;justify-content:center;gap:10px}
 .manga-ch-bar{padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);max-height:28vh;overflow-y:auto;flex-shrink:0}
 .manga-range-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
@@ -272,7 +272,6 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .manga-ch-btn.active{background:var(--brass);color:var(--brass-ink);font-weight:700;border-color:var(--brass)}
 .manga-ch-btn:hover{border-color:var(--brass)}
 @media(max-width:640px){
-  .manga-modal-inner{margin:0;border-radius:0;border:none;position:fixed;inset:0;max-width:100%;max-height:100%;height:100%}
   .manga-ch-strip{grid-template-columns:repeat(auto-fill,minmax(46px,1fr))}
 }
 
