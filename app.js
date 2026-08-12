@@ -1027,6 +1027,7 @@ async function openMangaReader(show) {
   mangaModalName.textContent = show.title;
   mangaModal.classList.add("open");
   document.body.style.overflow = "hidden";
+  if (mangaModal.requestFullscreen) mangaModal.requestFullscreen().catch(() => {});
   mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading chapters…</div>`;
   document.getElementById("mangaRangeStrip").innerHTML = "";
   document.getElementById("mangaChStrip").innerHTML = "";
@@ -1071,6 +1072,7 @@ function closeMangaReader() {
   document.body.style.overflow = "";
   mangaPages.innerHTML = "";
   mangaCurrent = null;
+  if (document.fullscreenElement === mangaModal) document.exitFullscreen().catch(() => {});
 }
 
 mangaModalClose.addEventListener("click", closeMangaReader);
