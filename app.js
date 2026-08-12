@@ -923,7 +923,8 @@ const b64url = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").re
 const mangaProxy = u => CORS_PROXY + "/?b64=" + b64url(u);
 const mangaImg = u => CORS_PROXY + "/?b64=" + b64url(u) + "&r64=" + b64url(MANGA_REFERER);
 const mangaChCache = {};
-let mangaCurrent = null;   // { show, chapters, idx }
+let mangaCurrent = null;   // { show, chapters, idx, pages, pageIdx }
+let mangaZoomState = { scale: 1, tx: 0, ty: 0 };
 
 function renderManga() {
   const query = searchInput.value.toLowerCase().trim();
@@ -984,6 +985,8 @@ async function openMangaChapter(idx) {
   const ch = mangaCurrent.chapters[idx];
   if (!ch) return;
   mangaCurrent.idx = idx;
+  mangaCurrent.pages = [];
+  mangaCurrent.pageIdx = 0;
   setMangaStatus("Chapter " + ch.label + " · loading…");
   mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading pages…</div>`;
   document.querySelectorAll("#mangaChStrip .manga-ch-btn").forEach(b =>
@@ -996,10 +999,149 @@ async function openMangaChapter(idx) {
     setMangaStatus("Chapter " + ch.label);
     return;
   }
-  mangaPages.innerHTML = pages.map((p, i) =>
-    `<img class="manga-page-img" loading="lazy" src="${mangaImg(p)}" alt="Page ${i + 1}">`).join("");
-  mangaPages.scrollTop = 0;
-  setMangaStatus("Chapter " + ch.label + " · " + pages.length + " pages");
+  mangaCurrent.pages = pages;
+  mangaCurrent.pageIdx = 0;
+  renderMangaPage();
+}
+
+// Single-page view: tap the left/right edge of the page to turn it, tap the
+// middle to show/hide the top and chapter bars, double-tap or pinch to zoom.
+function renderMangaPage() {
+  const { pages, pageIdx, chapters, idx } = mangaCurrent;
+  const ch = chapters[idx];
+  mangaPages.innerHTML = `
+    <div class="manga-page-wrap" id="mangaPageWrap">
+      <img class="manga-page-img" id="mangaPageImg" src="${mangaImg(pages[pageIdx])}" alt="Page ${pageIdx + 1}" draggable="false">
+    </div>
+    <div class="manga-page-count">${pageIdx + 1} / ${pages.length}</div>`;
+  setMangaStatus("Chapter " + ch.label + " · Page " + (pageIdx + 1) + " / " + pages.length);
+  mangaZoomState = { scale: 1, tx: 0, ty: 0 };
+  applyMangaZoom();
+  bindMangaGestures();
+  if (pages[pageIdx + 1]) new Image().src = mangaImg(pages[pageIdx + 1]);
+}
+
+function mangaGoPage(delta) {
+  if (!mangaCurrent || !mangaCurrent.pages.length) return;
+  const next = mangaCurrent.pageIdx + delta;
+  if (next < 0 || next >= mangaCurrent.pages.length) {
+    // At the start/end of the chapter — surface the controls so the reader
+    // can pick the next/previous chapter instead of silently doing nothing.
+    showMangaControls();
+    return;
+  }
+  mangaCurrent.pageIdx = next;
+  renderMangaPage();
+}
+
+function toggleMangaControls() { mangaModal.classList.toggle("manga-controls-hidden"); }
+function showMangaControls()   { mangaModal.classList.remove("manga-controls-hidden"); }
+
+function applyMangaZoom() {
+  const img = document.getElementById("mangaPageImg");
+  if (!img) return;
+  img.style.transform = `translate(${mangaZoomState.tx}px, ${mangaZoomState.ty}px) scale(${mangaZoomState.scale})`;
+  document.getElementById("mangaPageWrap")?.classList.toggle("zoomed", mangaZoomState.scale > 1);
+}
+
+function bindMangaGestures() {
+  const wrap = document.getElementById("mangaPageWrap");
+  if (!wrap) return;
+  const pointers = new Map();
+  let pinchStartDist = 0, pinchStartScale = 1;
+  let tapStartX = 0, tapStartY = 0, tapStartTime = 0, moved = false;
+  let panStartX = 0, panStartY = 0, panOrigTx = 0, panOrigTy = 0;
+  let lastTapTime = 0, lastTapX = 0, lastTapY = 0, tapTimer = null;
+
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const mid  = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+  function clampPan() {
+    const rect = wrap.getBoundingClientRect();
+    const maxX = Math.max(0, (mangaZoomState.scale - 1) * rect.width  / 2);
+    const maxY = Math.max(0, (mangaZoomState.scale - 1) * rect.height / 2);
+    mangaZoomState.tx = Math.min(maxX, Math.max(-maxX, mangaZoomState.tx));
+    mangaZoomState.ty = Math.min(maxY, Math.max(-maxY, mangaZoomState.ty));
+  }
+
+  function zoomAt(clientX, clientY, targetScale) {
+    const rect = wrap.getBoundingClientRect();
+    const cx = clientX - rect.left - rect.width / 2;
+    const cy = clientY - rect.top - rect.height / 2;
+    const ratio = targetScale / mangaZoomState.scale;
+    mangaZoomState.tx = cx - (cx - mangaZoomState.tx) * ratio;
+    mangaZoomState.ty = cy - (cy - mangaZoomState.ty) * ratio;
+    mangaZoomState.scale = targetScale;
+    clampPan();
+    applyMangaZoom();
+  }
+
+  function resetZoom() { mangaZoomState = { scale: 1, tx: 0, ty: 0 }; applyMangaZoom(); }
+
+  wrap.addEventListener("pointerdown", e => {
+    wrap.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      tapStartX = e.clientX; tapStartY = e.clientY; tapStartTime = Date.now(); moved = false;
+      panStartX = e.clientX; panStartY = e.clientY;
+      panOrigTx = mangaZoomState.tx; panOrigTy = mangaZoomState.ty;
+    } else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchStartDist = dist(a, b);
+      pinchStartScale = mangaZoomState.scale;
+    }
+  });
+
+  wrap.addEventListener("pointermove", e => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const scale = Math.min(4, Math.max(1, pinchStartScale * (dist(a, b) / pinchStartDist)));
+      const c = mid(a, b);
+      zoomAt(c.x, c.y, scale);
+      moved = true;
+    } else if (pointers.size === 1) {
+      if (Math.hypot(e.clientX - tapStartX, e.clientY - tapStartY) > 8) moved = true;
+      if (mangaZoomState.scale > 1) {
+        mangaZoomState.tx = panOrigTx + (e.clientX - panStartX);
+        mangaZoomState.ty = panOrigTy + (e.clientY - panStartY);
+        clampPan();
+        applyMangaZoom();
+      }
+    }
+  });
+
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size !== 0 || moved || Date.now() - tapStartTime > 500) return;
+    const now = Date.now();
+    const isDoubleTap = tapTimer && (now - lastTapTime < 300) && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 30;
+    if (isDoubleTap) {
+      clearTimeout(tapTimer); tapTimer = null;
+      if (mangaZoomState.scale > 1) resetZoom(); else zoomAt(e.clientX, e.clientY, 2.5);
+      return;
+    }
+    lastTapTime = now; lastTapX = e.clientX; lastTapY = e.clientY;
+    const cx = e.clientX, cy = e.clientY;
+    tapTimer = setTimeout(() => {
+      tapTimer = null;
+      if (mangaZoomState.scale > 1) return;   // ignore single taps while inspecting a zoomed page
+      const rect = wrap.getBoundingClientRect();
+      const relX = (cx - rect.left) / rect.width;
+      if (relX < 0.35) mangaGoPage(-1);
+      else if (relX > 0.65) mangaGoPage(1);
+      else toggleMangaControls();
+    }, 260);
+  }
+
+  wrap.addEventListener("pointerup", endPointer);
+  wrap.addEventListener("pointercancel", endPointer);
+
+  wrap.addEventListener("wheel", e => {
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, Math.min(4, Math.max(1, mangaZoomState.scale - e.deltaY * 0.0025)));
+  }, { passive: false });
 }
 
 function renderMangaChapterRange(chapters, startIdx) {
@@ -1026,6 +1168,7 @@ function focusMangaRange(idx) {
 async function openMangaReader(show) {
   mangaModalName.textContent = show.title;
   mangaModal.classList.add("open");
+  mangaModal.classList.remove("manga-controls-hidden");
   document.body.style.overflow = "hidden";
   if (mangaModal.requestFullscreen) mangaModal.requestFullscreen().catch(() => {});
   mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading chapters…</div>`;
