@@ -260,9 +260,14 @@ body .icon-sun{display:block}body .icon-moon{display:none}
 .manga-top-actions{display:flex;align-items:center;gap:8px}
 .manga-nav-btn{background:rgba(217,167,97,.12);color:var(--brass);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit}
 .manga-nav-btn:hover{background:rgba(217,167,97,.22)}
-.manga-pages{flex:1 1 auto;overflow-y:auto;background:#000;text-align:center;min-height:0;-webkit-overflow-scrolling:touch}
-.manga-page-img{display:block;width:100%;max-width:1100px;margin:0 auto;background:#111}
-.manga-loading{color:var(--text-dim);padding:44px 20px;text-align:center;font-size:.85rem;display:flex;align-items:center;justify-content:center;gap:10px}
+.manga-pages{position:relative;flex:1 1 auto;overflow:hidden;background:#000;min-height:0}
+.manga-page-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+.manga-page-wrap.zoomed{cursor:grab}
+.manga-page-img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;background:#111;transform-origin:center center;user-select:none;-webkit-user-drag:none;touch-action:none}
+.manga-page-count{position:absolute;bottom:12px;right:14px;background:rgba(0,0,0,.55);color:#fff;font-size:.7rem;padding:3px 10px;border-radius:999px;pointer-events:none;font-variant-numeric:tabular-nums;z-index:2}
+.manga-loading{position:absolute;inset:0;color:var(--text-dim);padding:44px 20px;text-align:center;font-size:.85rem;display:flex;align-items:center;justify-content:center;gap:10px}
+.manga-modal.manga-controls-hidden .manga-modal-top,
+.manga-modal.manga-controls-hidden .manga-ch-bar{display:none}
 .manga-ch-bar{padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);max-height:28vh;overflow-y:auto;flex-shrink:0}
 .manga-range-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .manga-range-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:999px;padding:4px 11px;font-size:.68rem;cursor:pointer;white-space:nowrap;font-family:inherit;font-variant-numeric:tabular-nums}
