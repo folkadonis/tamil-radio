@@ -926,6 +926,31 @@ const mangaChCache = {};
 let mangaCurrent = null;   // { show, chapters, idx, pages, pageIdx }
 let mangaZoomState = { scale: 1, tx: 0, ty: 0 };
 
+// The reader pushes one history entry while open so the device/browser back
+// button doesn't leave the app. The first back press exits full-screen and
+// shows the chapter switcher instead; a second press actually closes it.
+let mangaHistoryOwned = false;
+function pushMangaHistory() {
+  if (mangaHistoryOwned) return;
+  history.pushState({ mangaReader: true }, "");
+  mangaHistoryOwned = true;
+}
+function popMangaHistoryIfOwned() {
+  if (!mangaHistoryOwned) return;
+  mangaHistoryOwned = false;
+  history.back();
+}
+window.addEventListener("popstate", () => {
+  if (!mangaModal.classList.contains("open")) return;
+  mangaHistoryOwned = false;   // the entry we owned was just consumed by this navigation
+  if (mangaModal.classList.contains("manga-controls-hidden")) {
+    showMangaControls();
+    pushMangaHistory();        // re-arm so the next back press is caught too
+  } else {
+    closeMangaReader(true);
+  }
+});
+
 function renderManga() {
   const query = searchInput.value.toLowerCase().trim();
   const list  = MANGA.filter(m => !query || m.title.toLowerCase().includes(query) || m.subtitle.toLowerCase().includes(query));
@@ -1171,6 +1196,7 @@ async function openMangaReader(show) {
   mangaModalName.textContent = show.title;
   mangaModal.classList.add("open");
   mangaModal.classList.remove("manga-controls-hidden");
+  pushMangaHistory();
   document.body.style.overflow = "hidden";
   if (mangaModal.requestFullscreen) mangaModal.requestFullscreen().catch(() => {});
   mangaPages.innerHTML = `<div class="manga-loading"><span class="match-spin"></span> Loading chapters…</div>`;
@@ -1212,15 +1238,16 @@ function gotoMangaChapter(delta) {
   openMangaChapter(next);
 }
 
-function closeMangaReader() {
+function closeMangaReader(fromPopstate = false) {
   mangaModal.classList.remove("open");
   document.body.style.overflow = "";
   mangaPages.innerHTML = "";
   mangaCurrent = null;
   if (document.fullscreenElement === mangaModal) document.exitFullscreen().catch(() => {});
+  if (!fromPopstate) popMangaHistoryIfOwned();
 }
 
-mangaModalClose.addEventListener("click", closeMangaReader);
+mangaModalClose.addEventListener("click", () => closeMangaReader());
 mangaModal.addEventListener("click", e => { if (e.target === mangaModal) closeMangaReader(); });
 document.getElementById("mangaPrevBtn").addEventListener("click", () => gotoMangaChapter(-1));
 document.getElementById("mangaNextBtn").addEventListener("click", () => gotoMangaChapter(1));
