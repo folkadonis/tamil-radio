@@ -1060,9 +1060,18 @@ function mangaGoPage(delta) {
   renderMangaPage();
 }
 
-function toggleMangaControls() { mangaModal.classList.toggle("manga-controls-hidden"); }
-function showMangaControls()   { mangaModal.classList.remove("manga-controls-hidden"); }
-function hideMangaControls()   { mangaModal.classList.add("manga-controls-hidden"); }
+function toggleMangaControls() {
+  if (mangaModal.classList.contains("manga-controls-hidden")) showMangaControls();
+  else hideMangaControls();
+}
+function showMangaControls() { mangaModal.classList.remove("manga-controls-hidden"); }
+function hideMangaControls() {
+  mangaModal.classList.add("manga-controls-hidden");
+  // Browsers drop native Fullscreen on back/forward navigation (and it may
+  // never have been granted at all, e.g. iOS Safari) — re-request it every
+  // time we return to the immersive view instead of only on initial open.
+  if (mangaModal.requestFullscreen && !document.fullscreenElement) mangaModal.requestFullscreen().catch(() => {});
+}
 
 function applyMangaZoom() {
   const img = document.getElementById("mangaPageImg");
